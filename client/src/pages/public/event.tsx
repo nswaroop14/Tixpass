@@ -406,6 +406,24 @@ export default function PublicEvent() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Submit Button - Desktop */}
+                      <div className="hidden lg:block pt-2">
+                        <Button
+                          type="submit"
+                          form="booking-form"
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-12 text-sm font-semibold gap-2"
+                          disabled={createBooking.isPending}
+                        >
+                          {createBooking.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              Continue to Payment <ArrowRight className="w-4 h-4" />
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </>
                   )}
                 </div>
@@ -658,8 +676,8 @@ export default function PublicEvent() {
                         <span className="text-lg font-bold text-gray-900">€{totalAmount}</span>
                       </div>
                     </div>
-                    {/* Mobile CTA */}
-                    <div className="lg:hidden pt-2">
+                    {/* CTA Button */}
+                    <div className="pt-2">
                       {step === 1 && !isPaused && !isSoldOut && (
                         <Button
                           type="submit"
