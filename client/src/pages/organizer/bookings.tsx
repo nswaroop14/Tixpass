@@ -302,36 +302,36 @@ export default function OrganizerBookings() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left table-fixed">
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
-                  <th className="px-3 md:px-4 py-3 font-medium">Customer</th>
-                  <th className="px-3 md:px-4 py-3 font-medium max-w-[150px]">Event</th>
-                  <th className="px-3 md:px-4 py-3 font-medium hidden lg:table-cell">Mobile</th>
-                  <th className="px-3 md:px-4 py-3 font-medium text-center">Qty</th>
-                  <th className="px-3 md:px-4 py-3 font-medium">Total</th>
-                  <th className="px-3 md:px-4 py-3 font-medium">Status</th>
-                  <th className="px-3 md:px-4 py-3 font-medium hidden xl:table-cell">Ref #</th>
-                  <th className="px-3 md:px-4 py-3 font-medium text-right">Actions</th>
+                  <th className="px-3 md:px-4 py-3 font-medium w-[22%]">Customer</th>
+                  <th className="px-3 md:px-4 py-3 font-medium w-[22%]">Event</th>
+                  <th className="px-3 md:px-4 py-3 font-medium hidden lg:table-cell w-[13%]">Mobile</th>
+                  <th className="px-3 md:px-4 py-3 font-medium text-center w-[6%]">Qty</th>
+                  <th className="px-3 md:px-4 py-3 font-medium w-[9%]">Total</th>
+                  <th className="px-3 md:px-4 py-3 font-medium w-[12%]">Status</th>
+                  <th className="px-3 md:px-4 py-3 font-medium hidden xl:table-cell w-[8%]">Ref #</th>
+                  <th className="px-3 md:px-4 py-3 font-medium text-right w-[8%]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredBookings.map((row: any) => (
                   <tr key={row.booking.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-3 md:px-4 py-3">
-                      <p className="font-medium text-foreground truncate max-w-[120px]">{row.booking.customerName}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{row.booking.customerEmail}</p>
+                    <td className="px-3 md:px-4 py-3 break-words">
+                      <p className="font-medium text-foreground">{row.booking.customerName}</p>
+                      <p className="text-xs text-muted-foreground break-all">{row.booking.customerEmail}</p>
                     </td>
-                    <td className="px-3 md:px-4 py-3 truncate max-w-[150px]" title={row.event.title}>{row.event.title}</td>
-                    <td className="px-3 md:px-4 py-3 hidden lg:table-cell">{row.booking.customerPhone}</td>
+                    <td className="px-3 md:px-4 py-3 break-words">{row.event.title}</td>
+                    <td className="px-3 md:px-4 py-3 hidden lg:table-cell break-words">{row.booking.customerPhone}</td>
                     <td className="px-3 md:px-4 py-3 font-medium text-center">{row.booking.ticketQuantity}</td>
                     <td className="px-3 md:px-4 py-3 font-medium text-primary whitespace-nowrap">
                       €{((row.event.ticketPrice * row.booking.ticketQuantity) / 100).toFixed(2)}
                     </td>
                     <td className="px-3 md:px-4 py-3">{getStatusBadge(row.booking.status)}</td>
-                    <td className="px-3 md:px-4 py-3 font-mono text-xs hidden xl:table-cell">{row.booking.transactionReference || '-'}</td>
+                    <td className="px-3 md:px-4 py-3 font-mono text-xs hidden xl:table-cell break-all">{row.booking.transactionReference || '-'}</td>
                     <td className="px-3 md:px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1 md:gap-2">
+                      <div className="flex justify-end gap-1 md:gap-2 flex-wrap">
                         {row.booking.status === 'payment_submitted' && (
                           <Button
                             size="sm"
