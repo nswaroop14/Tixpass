@@ -1,0 +1,355 @@
+You are the lead software architect and senior full-stack engineer for this project.
+
+This project is an MVP ticket booking platform.
+
+Event organizers create events and share booking links with customers.
+
+Customers book tickets without creating accounts.
+
+Tickets are issued only after the organizer manually approves payment.
+
+QR codes are generated for tickets and scanned at event entry.
+
+-------------------------------------------------------
+
+DEVELOPMENT ENVIRONMENT
+
+This project is being developed on Replit.
+
+The code must run inside a Replit environment.
+
+Requirements:
+
+Node.js runtime
+PostgreSQL database
+Environment variables via .env
+Project must run with:
+
+npm install
+npm run dev
+
+Avoid complex infrastructure setup.
+
+Keep the project simple and runnable inside Replit.
+
+-------------------------------------------------------
+
+PROJECT ROLES
+
+Admin
+Organizer
+
+Buyers do not have accounts.
+
+-------------------------------------------------------
+
+ADMIN RESPONSIBILITIES
+
+Admin manages organizer accounts only.
+
+Admin can:
+
+Create organizer accounts
+Pause organizers
+Delete organizers
+Reset organizer password
+
+Admin does not manage events or bookings.
+
+-------------------------------------------------------
+
+ORGANIZER RESPONSIBILITIES
+
+Organizers can:
+
+Create events
+Edit events
+Pause events
+Delete events
+View bookings
+Approve payments
+Generate tickets
+Scan QR tickets
+
+Each event has a public booking page.
+
+Example:
+
+/event/{event_id}
+
+Organizers share this booking link with customers.
+
+-------------------------------------------------------
+
+CUSTOMER BOOKING FLOW
+
+Customers open the event booking link.
+
+Customers see:
+
+Event title
+Description
+Venue
+Event date
+Ticket types
+Ticket price
+
+Customers enter:
+
+Name
+Email
+Phone
+Ticket quantity
+
+Booking is created with status:
+
+pending_payment
+
+Customer transfers payment manually and submits:
+
+transaction reference
+
+Booking status becomes:
+
+payment_submitted
+
+-------------------------------------------------------
+
+PAYMENT APPROVAL
+
+Organizer dashboard shows bookings awaiting approval.
+
+Organizer verifies payment manually.
+
+Organizer can:
+
+Approve payment
+Reject payment
+
+If approved:
+
+Booking status becomes:
+
+paid
+
+Tickets are generated.
+
+-------------------------------------------------------
+
+QR TICKET GENERATION
+
+When payment is approved:
+
+System generates tickets.
+
+Each ticket contains:
+
+ticket_id
+event_id
+booking_id
+unique_ticket_code
+qr_data
+scan_status
+
+QR code must contain the unique_ticket_code.
+
+Each ticket supports one-time scan validation.
+
+-------------------------------------------------------
+
+EMAIL DELIVERY
+
+After payment approval:
+
+System emails ticket to buyer.
+
+Email must include:
+
+Event details
+Ticket details
+QR code image
+Ticket page link
+
+Example:
+
+/ticket/{ticket_id}
+
+Use an email service abstraction.
+
+Allow future providers such as:
+
+SMTP
+SendGrid
+Resend
+
+-------------------------------------------------------
+
+TICKET SCANNER
+
+Organizer dashboard must include a QR scanner page.
+
+Scanner uses device camera.
+
+When QR code is scanned:
+
+System validates:
+
+ticket exists
+ticket belongs to event
+ticket not already scanned
+
+If valid:
+
+mark ticket scanned
+show "Entry allowed"
+
+If already scanned:
+
+show "Ticket already used"
+
+If invalid:
+
+show "Invalid ticket"
+
+-------------------------------------------------------
+
+TECH STACK
+
+Frontend
+
+Next.js 14
+TypeScript
+Tailwind CSS
+
+Backend
+
+Node.js
+Express.js
+
+Database
+
+PostgreSQL
+
+Authentication
+
+JWT authentication for admin and organizers.
+
+Buyers do not authenticate.
+
+-------------------------------------------------------
+
+ARCHITECTURE RULES
+
+Backend structure:
+
+/server
+   /routes
+   /controllers
+   /services
+   /models
+   /middleware
+   /config
+
+Frontend structure:
+
+/app
+   /admin
+   /organizer
+   /event/[eventId]
+   /ticket/[ticketId]
+   /login
+
+/components
+   ui
+   dashboard
+   forms
+
+Business logic must be implemented in backend services.
+
+-------------------------------------------------------
+
+DATABASE RULES
+
+Use PostgreSQL.
+
+Use UUID primary keys.
+
+Tables must include:
+
+created_at
+updated_at
+
+Use soft delete via:
+
+deleted_at timestamp
+
+Core tables:
+
+users
+organizers
+events
+bookings
+tickets
+
+-------------------------------------------------------
+
+BOOKING STATUS
+
+pending_payment
+payment_submitted
+paid
+cancelled
+
+Tickets are generated only after payment approval.
+
+-------------------------------------------------------
+
+UI RULES
+
+Authenticated pages must use:
+
+DashboardLayout
+Sidebar
+Header
+
+Use shared components:
+
+PageHeader
+SectionCard
+DataTable
+FormSection
+PrimaryButton
+DangerButton
+ConfirmationModal
+StatusBadge
+
+Maintain consistent UI.
+
+-------------------------------------------------------
+
+CODE QUALITY RULES
+
+Use TypeScript interfaces.
+
+Avoid duplicate logic.
+
+Write reusable utilities.
+
+Follow REST API design.
+
+-------------------------------------------------------
+
+OUTPUT FORMAT
+
+When generating code include:
+
+File structure
+Backend routes
+Controllers
+Services
+Database queries
+Frontend pages
+Example API requests
+Testing instructions
+
+Always extend the existing project instead of creating duplicate structures.
