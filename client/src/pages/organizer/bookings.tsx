@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Ticket, CheckCircle2, XCircle, Loader2, PlusCircle, Edit3, Trash2, Filter, Mail } from "lucide-react";
+import { Ticket, CheckCircle2, Loader2, PlusCircle, Edit3, Trash2, Filter, Mail, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +52,7 @@ export default function OrganizerBookings() {
 
   const isLoadingState = isBookingsLoading || isEventsLoading;
   const isEmptyState = !filteredBookings || filteredBookings.length === 0;
+
   const handleDownloadCsv = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -149,26 +150,26 @@ export default function OrganizerBookings() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'paid': return <Badge className="bg-emerald-500 hover:bg-emerald-600">Paid & Approved</Badge>;
-      case 'payment_submitted': return <Badge className="bg-amber-500 hover:bg-amber-600 text-white">Verification Needed</Badge>;
-      case 'pending_payment': return <Badge variant="secondary">Awaiting Payment</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
+      case 'paid': return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-[11px] px-1.5 py-0 leading-5">Paid</Badge>;
+      case 'payment_submitted': return <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-[11px] px-1.5 py-0 leading-5">Verify</Badge>;
+      case 'pending_payment': return <Badge variant="secondary" className="text-[11px] px-1.5 py-0 leading-5">Pending</Badge>;
+      default: return <Badge variant="outline" className="text-[11px] px-1.5 py-0 leading-5 capitalize">{status}</Badge>;
     }
   };
 
   return (
     <DashboardLayout role="organizer">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-3xl font-display font-bold">Bookings & Orders</h2>
-          <p className="text-muted-foreground mt-1">Review customer orders and verify payments.</p>
+          <h2 className="text-2xl font-display font-bold">Bookings & Orders</h2>
+          <p className="text-muted-foreground text-sm mt-0.5">Review customer orders and verify payments.</p>
         </div>
-
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
             <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-              <SelectTrigger className="w-full sm:w-[220px]">
+              <SelectTrigger className="w-full sm:w-[200px] h-9">
                 <SelectValue placeholder="Filter by event" />
               </SelectTrigger>
               <SelectContent>
@@ -181,116 +182,65 @@ export default function OrganizerBookings() {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" onClick={handleDownloadCsv} className="flex-1 sm:flex-none">Download CSV</Button>
-        </div>
-      </div>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="hover-elevate gap-2">
-              <PlusCircle className="w-4 h-4" /> Manual Ticket
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Create Manual Ticket</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleManualCreate} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Select Event</Label>
-                <Select value={formData.eventId} onValueChange={(val) => setFormData({...formData, eventId: val})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an event" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {events?.map((event: any) => (
-                      <SelectItem key={event.id} value={event.id} disabled={event.remainingCapacity <= 0}>
-                        {event.title} ({event.remainingCapacity} left)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Customer Name</Label>
-                <Input required value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Customer Email</Label>
-                <Input required type="email" value={formData.customerEmail} onChange={e => setFormData({...formData, customerEmail: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Customer Phone</Label>
-                <Input required type="tel" value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Ticket Quantity</Label>
-                <Input required type="number" min="1" value={formData.ticketQuantity} onChange={e => setFormData({...formData, ticketQuantity: e.target.value})} />
-              </div>
-              <Button type="submit" className="w-full" disabled={manualCreate.isPending}>
-                {manualCreate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Tickets"}
+          <Button variant="outline" size="sm" onClick={handleDownloadCsv}>Download CSV</Button>
+          <Dialog open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open);
+            if (!open) {
+              setFormData({ eventId: "", customerName: "", customerEmail: "", customerPhone: "", ticketQuantity: "1" });
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5">
+                <PlusCircle className="w-4 h-4" /> Manual Ticket
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Booking</DialogTitle>
-            </DialogHeader>
-            {editingBooking && (
-              <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Create Manual Ticket</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleManualCreate} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Select Event</Label>
+                  <Select value={formData.eventId} onValueChange={(val) => setFormData({...formData, eventId: val})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an event" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {events?.map((event: any) => (
+                        <SelectItem key={event.id} value={event.id} disabled={event.remainingCapacity <= 0}>
+                          {event.title} ({event.remainingCapacity} left)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label>Customer Name</Label>
-                  <Input
-                    required
-                    value={editingBooking.booking.customerName}
-                    onChange={(e) =>
-                      setEditingBooking({
-                        ...editingBooking,
-                        booking: { ...editingBooking.booking, customerName: e.target.value },
-                      })
-                    }
-                  />
+                  <Input required value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
                 </div>
                 <div className="space-y-2">
                   <Label>Customer Email</Label>
-                  <Input
-                    required
-                    type="email"
-                    value={editingBooking.booking.customerEmail}
-                    onChange={(e) =>
-                      setEditingBooking({
-                        ...editingBooking,
-                        booking: { ...editingBooking.booking, customerEmail: e.target.value },
-                      })
-                    }
-                  />
+                  <Input required type="email" value={formData.customerEmail} onChange={e => setFormData({...formData, customerEmail: e.target.value})} />
                 </div>
                 <div className="space-y-2">
                   <Label>Customer Phone</Label>
-                  <Input
-                    required
-                    type="tel"
-                    value={editingBooking.booking.customerPhone}
-                    onChange={(e) =>
-                      setEditingBooking({
-                        ...editingBooking,
-                        booking: { ...editingBooking.booking, customerPhone: e.target.value },
-                      })
-                    }
-                  />
+                  <Input required type="tel" value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} />
                 </div>
-                <Button type="submit" className="w-full" disabled={updateBooking.isPending}>
-                  {updateBooking.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+                <div className="space-y-2">
+                  <Label>Ticket Quantity</Label>
+                  <Input required type="number" min="1" value={formData.ticketQuantity} onChange={e => setFormData({...formData, ticketQuantity: e.target.value})} />
+                </div>
+                <Button type="submit" className="w-full" disabled={manualCreate.isPending}>
+                  {manualCreate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Tickets"}
                 </Button>
               </form>
-            )}
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
 
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      {/* Table Card */}
+      <div className="bg-card rounded-xl border border-border shadow-sm">
         {isLoadingState ? (
           <div className="p-12 flex justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -298,81 +248,127 @@ export default function OrganizerBookings() {
         ) : isEmptyState ? (
           <div className="p-12 text-center text-muted-foreground">
             <Ticket className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p>No bookings have been made yet.</p>
+            <p className="text-sm">No bookings have been made yet.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left table-fixed">
-              <thead className="bg-muted/50 text-muted-foreground">
-                <tr>
-                  <th className="px-2 md:px-3 py-3 font-medium w-[30%]">Customer</th>
-                  <th className="px-2 md:px-3 py-3 font-medium w-[30%]">Event</th>
-                  <th className="px-2 md:px-3 py-3 font-medium hidden lg:table-cell w-[14%]">Mobile</th>
-                  <th className="px-2 md:px-3 py-3 font-medium text-center w-[5%]">Qty</th>
-                  <th className="px-2 md:px-3 py-3 font-medium w-[8%]">Total</th>
-                  <th className="px-2 md:px-3 py-3 font-medium w-[10%]">Status</th>
-                  <th className="px-2 md:px-3 py-3 font-medium hidden xl:table-cell w-[7%]">Ref #</th>
-                  <th className="px-2 md:px-3 py-3 font-medium text-right w-[10%]">Actions</th>
+            <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '19%' }} />
+                <col style={{ width: '19%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '5%' }} />
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '9%' }} />
+                <col style={{ width: '7%' }} />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
+                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Event</th>
+                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Mobile</th>
+                  <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Qty</th>
+                  <th className="text-right px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
+                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden xl:table-cell">Ref #</th>
+                  <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sent</th>
+                  <th className="text-right px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {filteredBookings.map((row: any) => (
-                  <tr key={row.booking.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-2 md:px-3 py-3 break-words">
-                      <p className="font-medium text-foreground">{row.booking.customerName}</p>
-                      <p className="text-xs text-muted-foreground break-all">{row.booking.customerEmail}</p>
+                  <tr key={row.booking.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    {/* Customer */}
+                    <td className="px-3 py-3 align-top">
+                      <p className="font-medium text-foreground leading-snug">{row.booking.customerName}</p>
+                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 break-all">{row.booking.customerEmail}</p>
                     </td>
-                    <td className="px-2 md:px-3 py-3 break-words">{row.event.title}</td>
-                    <td className="px-2 md:px-3 py-3 hidden lg:table-cell break-words">{row.booking.customerPhone}</td>
-                    <td className="px-2 md:px-3 py-3 font-medium text-center">{row.booking.ticketQuantity}</td>
-                    <td className="px-2 md:px-3 py-3 font-medium text-primary whitespace-nowrap">
+                    {/* Event */}
+                    <td className="px-3 py-3 align-top">
+                      <p className="font-medium text-foreground leading-snug line-clamp-2">{row.event.title}</p>
+                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                        {format(new Date(row.event.eventDate), 'MMM d, yyyy')}
+                      </p>
+                    </td>
+                    {/* Mobile */}
+                    <td className="px-3 py-3 align-top text-muted-foreground text-[13px] hidden lg:table-cell whitespace-nowrap">
+                      {row.booking.customerPhone}
+                    </td>
+                    {/* Qty */}
+                    <td className="px-3 py-3 align-top text-center font-medium text-foreground">
+                      {row.booking.ticketQuantity}
+                    </td>
+                    {/* Total */}
+                    <td className="px-3 py-3 align-top text-right font-semibold text-foreground whitespace-nowrap">
                       €{((row.event.ticketPrice * row.booking.ticketQuantity) / 100).toFixed(2)}
                     </td>
-                    <td className="px-2 md:px-3 py-3">{getStatusBadge(row.booking.status)}</td>
-                    <td className="px-2 md:px-3 py-3 font-mono text-xs hidden xl:table-cell break-all">{row.booking.transactionReference || '-'}</td>
-                    <td className="px-2 md:px-3 py-3 text-right">
-                      <div className="flex justify-end gap-1 md:gap-2 flex-wrap">
+                    {/* Status */}
+                    <td className="px-3 py-3 align-top">
+                      {getStatusBadge(row.booking.status)}
+                    </td>
+                    {/* Ref # */}
+                    <td className="px-3 py-3 align-top text-[11px] text-muted-foreground font-mono break-all hidden xl:table-cell">
+                      {row.booking.transactionReference || '—'}
+                    </td>
+                    {/* Tickets Sent */}
+                    <td className="px-3 py-3 align-top text-center">
+                      {row.booking.status === 'paid' ? (
+                        <span className="inline-flex items-center gap-0.5 text-emerald-600">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span className="text-[11px] font-medium hidden xl:inline">Yes</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-[11px]">—</span>
+                      )}
+                    </td>
+                    {/* Actions */}
+                    <td className="px-3 py-3 align-top">
+                      <div className="flex justify-end items-center gap-0.5">
                         {row.booking.status === 'payment_submitted' && (
                           <Button
-                            size="sm"
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            title="Approve"
                             onClick={() => approve.mutate(row.booking.id)}
                             disabled={approve.isPending}
                           >
-                            <CheckCircle2 className="w-4 h-4" /><span className="hidden sm:inline ml-1">Approve</span>
+                            <CheckCircle2 className="w-4 h-4" />
                           </Button>
                         )}
                         {row.booking.status === 'paid' && (
                           <Button
-                            variant="secondary"
-                            size="sm"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            title="Resend tickets"
                             onClick={() => openResendConfirm(row)}
                             disabled={resendTickets.isPending}
                           >
-                            <Mail className="w-4 h-4" /><span className="hidden sm:inline ml-1">Resend</span>
+                            <Send className="w-3.5 h-3.5" />
                           </Button>
                         )}
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          title="Edit"
                           onClick={() => openEditDialog(row)}
                         >
-                          <Edit3 className="w-4 h-4" /><span className="hidden sm:inline ml-1">Edit</span>
+                          <Edit3 className="w-3.5 h-3.5" />
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          title="Delete"
                           onClick={() => handleDeleteBooking(row)}
                         >
-                          <Trash2 className="w-4 h-4" /><span className="hidden sm:inline ml-1">Del</span>
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
-                      {row.booking.status === 'paid' && (
-                        <span className="text-xs text-emerald-600 font-medium flex justify-end items-center gap-1 mt-1">
-                          <CheckCircle2 className="w-3 h-3" /> <span className="hidden sm:inline">Tickets Sent</span>
-                        </span>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -382,12 +378,70 @@ export default function OrganizerBookings() {
         )}
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Booking</DialogTitle>
+          </DialogHeader>
+          {editingBooking && (
+            <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Customer Name</Label>
+                <Input
+                  required
+                  value={editingBooking.booking.customerName}
+                  onChange={(e) =>
+                    setEditingBooking({
+                      ...editingBooking,
+                      booking: { ...editingBooking.booking, customerName: e.target.value },
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Customer Email</Label>
+                <Input
+                  required
+                  type="email"
+                  value={editingBooking.booking.customerEmail}
+                  onChange={(e) =>
+                    setEditingBooking({
+                      ...editingBooking,
+                      booking: { ...editingBooking.booking, customerEmail: e.target.value },
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Customer Phone</Label>
+                <Input
+                  required
+                  type="tel"
+                  value={editingBooking.booking.customerPhone}
+                  onChange={(e) =>
+                    setEditingBooking({
+                      ...editingBooking,
+                      booking: { ...editingBooking.booking, customerPhone: e.target.value },
+                    })
+                  }
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={updateBooking.isPending}>
+                {updateBooking.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Resend Dialog */}
       <Dialog open={isResendConfirmOpen} onOpenChange={setIsResendConfirmOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Resend Tickets</DialogTitle>
             <DialogDescription>
-              This will re-send the original confirmation email with all tickets to <strong>{bookingToResend?.booking.customerEmail}</strong>.
+              This will re-send the confirmation email with all tickets to <strong>{bookingToResend?.booking.customerEmail}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -399,8 +453,8 @@ export default function OrganizerBookings() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsResendConfirmOpen(false)}>Cancel</Button>
-            <Button 
-              className="gap-2" 
+            <Button
+              className="gap-2"
               onClick={handleResendTickets}
               disabled={resendTickets.isPending}
             >
