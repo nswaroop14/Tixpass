@@ -10,7 +10,6 @@ import {
   ScanLine,
   Menu,
   BarChart3,
-  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -85,30 +84,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           );
         })}
       </nav>
-
-      {/* Help Section */}
-      {role === "organizer" && (
-        <div className="px-3 pb-3">
-          <div className="rounded-xl bg-gray-50 border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <HelpCircle className="w-4 h-4 text-indigo-500" />
-              <span className="text-sm font-semibold text-gray-900">Need Help?</span>
-            </div>
-            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-              Access guides and support for managing your events.
-            </p>
-            <Link href="/organizer/profile">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs h-8 border-gray-200 text-gray-600 hover:bg-white hover:text-gray-900"
-              >
-                View Help Center →
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* User Profile */}
       <div className="p-3 border-t border-gray-100">
