@@ -305,8 +305,8 @@ export default function OrganizerBookings() {
             <table className="w-full text-sm text-left table-fixed">
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
-                  <th className="px-2 md:px-3 py-3 font-medium w-[28%]">Customer</th>
-                  <th className="px-2 md:px-3 py-3 font-medium w-[28%]">Event</th>
+                  <th className="px-2 md:px-3 py-3 font-medium w-[30%]">Customer</th>
+                  <th className="px-2 md:px-3 py-3 font-medium w-[30%]">Event</th>
                   <th className="px-2 md:px-3 py-3 font-medium hidden lg:table-cell w-[14%]">Mobile</th>
                   <th className="px-2 md:px-3 py-3 font-medium text-center w-[5%]">Qty</th>
                   <th className="px-2 md:px-3 py-3 font-medium w-[8%]">Total</th>
