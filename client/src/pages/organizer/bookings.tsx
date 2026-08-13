@@ -40,7 +40,7 @@ export default function OrganizerBookings() {
     ticketQuantity: "1",
   });
 
-  const [selectedEventId, setSelectedEventId] = useState<string>("all");
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
   const [isResendConfirmOpen, setIsResendConfirmOpen] = useState(false);
@@ -48,7 +48,7 @@ export default function OrganizerBookings() {
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
-    if (!selectedEventId || selectedEventId === "all") return bookings;
+    if (!selectedEventId) return [];
     return bookings.filter((row: any) => row.event.id === selectedEventId);
   }, [bookings, selectedEventId]);
 
@@ -58,7 +58,7 @@ export default function OrganizerBookings() {
   const handleDownloadCsv = async () => {
     try {
       const token = localStorage.getItem("token");
-      const q = selectedEventId && selectedEventId !== "all" ? `?eventId=${selectedEventId}` : "";
+      const q = selectedEventId ? `?eventId=${selectedEventId}` : "";
       const res = await fetch(`/api/organizer/bookings/export${q}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -70,7 +70,7 @@ export default function OrganizerBookings() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `bookings${selectedEventId && selectedEventId !== "all" ? `_${selectedEventId}` : ""}.csv`;
+      a.download = `bookings${selectedEventId ? `_${selectedEventId}` : ""}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -182,10 +182,9 @@ export default function OrganizerBookings() {
             <Filter className="w-4 h-4 text-gray-400 shrink-0" />
             <Select value={selectedEventId} onValueChange={setSelectedEventId}>
               <SelectTrigger className="w-[180px] h-9 bg-white border-gray-200 text-sm">
-                <SelectValue placeholder="All events" />
+                <SelectValue placeholder="Select an event" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All events</SelectItem>
                 {events?.map((event: any) => (
                   <SelectItem key={event.id} value={event.id}>
                     {event.title}
@@ -285,8 +284,8 @@ export default function OrganizerBookings() {
         ) : isEmptyState ? (
           <EmptyState
             icon={<Ticket className="w-7 h-7" />}
-            title="No bookings yet"
-            description="Bookings will appear here when customers purchase tickets."
+            title={selectedEventId ? "No bookings for this event" : "Select an event to view bookings"}
+            description={selectedEventId ? "No bookings have been made yet for this event." : "Choose an event from the filter above to view its bookings."}
           />
         ) : (
           <div className="overflow-x-auto">
