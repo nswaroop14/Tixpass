@@ -21,6 +21,7 @@ import AttendeeList from "./pages/organizer/attendees";
 import OrganizerBookings from "./pages/organizer/bookings";
 import OrganizerScan from "./pages/organizer/scan";
 import OrganizerProfile from "./pages/organizer/profile";
+import OrganizerAnalytics from "./pages/organizer/analytics";
 
 function ProtectedRoute({ component: Component, roleRequired, ...props }: { component: React.ComponentType<any>, roleRequired?: string, [key: string]: any }) {
   const { user, isLoading } = useAuth();
@@ -93,6 +94,9 @@ function Router() {
       </Route>
       <Route path="/organizer/profile">
         {() => <ProtectedRoute component={OrganizerProfile} roleRequired="organizer" />}
+      </Route>
+      <Route path="/organizer/analytics">
+        {() => <ProtectedRoute component={OrganizerAnalytics} roleRequired="organizer" />}
       </Route>
 
       {/* Fallback */}

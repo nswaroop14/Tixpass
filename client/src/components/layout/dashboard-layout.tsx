@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, LayoutDashboard, Users, Calendar, Ticket, ScanLine, Menu } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, Calendar, Ticket, ScanLine, Menu, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -23,6 +23,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
     { href: "/organizer", label: "Dashboard", icon: LayoutDashboard },
     { href: "/organizer/events", label: "Events", icon: Calendar },
     { href: "/organizer/bookings", label: "Bookings", icon: Ticket },
+    { href: "/organizer/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/organizer/scan", label: "Scan Tickets", icon: ScanLine },
     { href: "/organizer/profile", label: "Account", icon: Users },
   ];

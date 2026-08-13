@@ -158,17 +158,17 @@ export default function OrganizerBookings() {
 
   return (
     <DashboardLayout role="organizer">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h2 className="text-3xl font-display font-bold">Bookings & Orders</h2>
           <p className="text-muted-foreground mt-1">Review customer orders and verify payments.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
             <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder="Filter by event" />
               </SelectTrigger>
               <SelectContent>
@@ -181,9 +181,11 @@ export default function OrganizerBookings() {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" onClick={handleDownloadCsv}>Download CSV</Button>
+          <Button variant="outline" onClick={handleDownloadCsv} className="flex-1 sm:flex-none">Download CSV</Button>
+        </div>
+      </div>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button className="hover-elevate gap-2">
               <PlusCircle className="w-4 h-4" /> Manual Ticket
@@ -287,8 +289,6 @@ export default function OrganizerBookings() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
-      </div>
 
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         {isLoadingState ? (
@@ -305,75 +305,72 @@ export default function OrganizerBookings() {
             <table className="w-full text-sm text-left">
               <thead className="bg-muted/50 text-muted-foreground">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Customer</th>
-                  <th className="px-6 py-4 font-medium">Event</th>
-                  <th className="px-6 py-4 font-medium hidden md:table-cell">Mobile</th>
-                  <th className="px-6 py-4 font-medium">Qty</th>
-                  <th className="px-6 py-4 font-medium">Total</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium">Ref #</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-3 md:px-4 py-3 font-medium">Customer</th>
+                  <th className="px-3 md:px-4 py-3 font-medium max-w-[150px]">Event</th>
+                  <th className="px-3 md:px-4 py-3 font-medium hidden lg:table-cell">Mobile</th>
+                  <th className="px-3 md:px-4 py-3 font-medium text-center">Qty</th>
+                  <th className="px-3 md:px-4 py-3 font-medium">Total</th>
+                  <th className="px-3 md:px-4 py-3 font-medium">Status</th>
+                  <th className="px-3 md:px-4 py-3 font-medium hidden xl:table-cell">Ref #</th>
+                  <th className="px-3 md:px-4 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredBookings.map((row: any) => (
                   <tr key={row.booking.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-foreground">{row.booking.customerName}</p>
-                      <p className="text-xs text-muted-foreground">{row.booking.customerEmail}</p>
-                      <p className="text-xs text-muted-foreground md:hidden">{row.booking.customerPhone}</p>
+                    <td className="px-3 md:px-4 py-3">
+                      <p className="font-medium text-foreground truncate max-w-[120px]">{row.booking.customerName}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{row.booking.customerEmail}</p>
                     </td>
-                    <td className="px-6 py-4">{row.event.title}</td>
-                    <td className="px-6 py-4 hidden md:table-cell">{row.booking.customerPhone}</td>
-                    <td className="px-6 py-4 font-medium">{row.booking.ticketQuantity}</td>
-                    <td className="px-6 py-4 font-medium text-primary">
+                    <td className="px-3 md:px-4 py-3 truncate max-w-[150px]" title={row.event.title}>{row.event.title}</td>
+                    <td className="px-3 md:px-4 py-3 hidden lg:table-cell">{row.booking.customerPhone}</td>
+                    <td className="px-3 md:px-4 py-3 font-medium text-center">{row.booking.ticketQuantity}</td>
+                    <td className="px-3 md:px-4 py-3 font-medium text-primary whitespace-nowrap">
                       €{((row.event.ticketPrice * row.booking.ticketQuantity) / 100).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4">{getStatusBadge(row.booking.status)}</td>
-                    <td className="px-6 py-4 font-mono text-xs">{row.booking.transactionReference || '-'}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 flex-wrap min-w-[120px]">
+                    <td className="px-3 md:px-4 py-3">{getStatusBadge(row.booking.status)}</td>
+                    <td className="px-3 md:px-4 py-3 font-mono text-xs hidden xl:table-cell">{row.booking.transactionReference || '-'}</td>
+                    <td className="px-3 md:px-4 py-3 text-right">
+                      <div className="flex justify-end gap-1 md:gap-2">
                         {row.booking.status === 'payment_submitted' && (
                           <Button
                             size="sm"
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white"
                             onClick={() => approve.mutate(row.booking.id)}
                             disabled={approve.isPending}
                           >
-                            <CheckCircle2 className="w-4 h-4" /> Approve
+                            <CheckCircle2 className="w-4 h-4" /><span className="hidden sm:inline ml-1">Approve</span>
                           </Button>
                         )}
                         {row.booking.status === 'paid' && (
                           <Button
                             variant="secondary"
                             size="sm"
-                            className="gap-2"
                             onClick={() => openResendConfirm(row)}
                             disabled={resendTickets.isPending}
                           >
-                            <Mail className="w-4 h-4" /> Resend
+                            <Mail className="w-4 h-4" /><span className="hidden sm:inline ml-1">Resend</span>
                           </Button>
                         )}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-2"
                           onClick={() => openEditDialog(row)}
                         >
-                          <Edit3 className="w-4 h-4" /> Edit
+                          <Edit3 className="w-4 h-4" /><span className="hidden sm:inline ml-1">Edit</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-2 text-destructive"
+                          className="text-destructive"
                           onClick={() => handleDeleteBooking(row)}
                         >
-                          <Trash2 className="w-4 h-4" /> Delete
+                          <Trash2 className="w-4 h-4" /><span className="hidden sm:inline ml-1">Del</span>
                         </Button>
                       </div>
                       {row.booking.status === 'paid' && (
                         <span className="text-xs text-emerald-600 font-medium flex justify-end items-center gap-1 mt-1">
-                          <CheckCircle2 className="w-3 h-3" /> Tickets Sent
+                          <CheckCircle2 className="w-3 h-3" /> <span className="hidden sm:inline">Tickets Sent</span>
                         </span>
                       )}
                     </td>

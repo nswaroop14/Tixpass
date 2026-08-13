@@ -770,6 +770,82 @@ export async function registerRoutes(
   });
 
 
+  // --- ANALYTICS ---
+  app.get("/api/organizer/analytics", authenticateToken, requireOrganizer, async (req: any, res) => {
+    try {
+      const org = await storage.getOrganizerByUserId(req.user.id);
+      if (!org) return res.status(404).json({ message: "Organizer not found" });
+
+      const eventsList = await storage.getEventsByOrganizer(org.id);
+      const bookingsData = await storage.getBookingsByOrganizer(org.id);
+
+      const eventIds = new Set(eventsList.map(e => e.id));
+
+      const revenueByEvent = eventsList.map(event => {
+        const eventBookings = bookingsData.filter(b => b.event.id === event.id && b.booking.status === 'paid');
+        const revenue = eventBookings.reduce((sum, b) => sum + (b.event.ticketPrice * b.booking.ticketQuantity), 0);
+        return { eventId: event.id, title: event.title, revenue };
+      });
+
+      const totalRevenue = revenueByEvent.reduce((sum, e) => sum + e.revenue, 0);
+
+      const allBookings = bookingsData.filter(b => eventIds.has(b.event.id));
+      const funnel = {
+        total: allBookings.length,
+        pending_payment: allBookings.filter(b => b.booking.status === 'pending_payment').length,
+        payment_submitted: allBookings.filter(b => b.booking.status === 'payment_submitted').length,
+        paid: allBookings.filter(b => b.booking.status === 'paid').length,
+        cancelled: allBookings.filter(b => b.booking.status === 'cancelled').length,
+      };
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const salesByDay: Record<string, number> = {};
+      allBookings.forEach(b => {
+        const d = new Date(b.booking.createdAt);
+        if (d >= thirtyDaysAgo) {
+          const key = d.toISOString().split('T')[0];
+          salesByDay[key] = (salesByDay[key] || 0) + b.booking.ticketQuantity;
+        }
+      });
+      const salesOverTime = Object.entries(salesByDay)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      const eventPerformance = eventsList.map(event => {
+        const sold = event.totalCapacity - event.remainingCapacity;
+        const sellThrough = event.totalCapacity > 0 ? Math.round((sold / event.totalCapacity) * 100) : 0;
+        return { eventId: event.id, title: event.title, sold, remaining: event.remainingCapacity, total: event.totalCapacity, sellThrough };
+      });
+
+      const attendance = await Promise.all(
+        eventsList.map(async (event) => {
+          const eventTickets = await storage.getTicketsByEvent(event.id);
+          const total = eventTickets.length;
+          const scanned = eventTickets.filter(t => t.ticket.scanStatus === 'scanned').length;
+          return { eventId: event.id, title: event.title, scanned, total };
+        })
+      );
+
+      const activeEvents = eventsList.filter(e => e.status === 'active').length;
+      const totalTicketsSold = eventsList.reduce((sum, e) => sum + (e.totalCapacity - e.remainingCapacity), 0);
+      const totalTicketsScanned = attendance.reduce((sum, a) => sum + a.scanned, 0);
+      const avgAttendance = totalTicketsSold > 0 ? Math.round((totalTicketsScanned / totalTicketsSold) * 100) : 0;
+
+      res.status(200).json({
+        summary: { totalRevenue, totalBookings: funnel.total, activeEvents, avgAttendance },
+        revenueByEvent,
+        funnel,
+        salesOverTime,
+        eventPerformance,
+        attendance,
+      });
+    } catch (err) {
+      console.error("Analytics error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // --- PUBLIC ROUTES ---
   app.post(api.public.organizer.apply.path, async (req, res) => {
     try {

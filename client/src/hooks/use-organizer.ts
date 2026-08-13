@@ -266,6 +266,13 @@ export function useScanTicket() {
   });
 }
 
+export function useAnalytics() {
+  return useQuery({
+    queryKey: ["/api/organizer/analytics"],
+    queryFn: () => fetchWithAuth("/api/organizer/analytics"),
+  });
+}
+
 export function useOrganizerResetPassword() {
   return useMutation({
     mutationFn: async (data: z.infer<typeof api.organizer.account.resetPassword.input>) => {
