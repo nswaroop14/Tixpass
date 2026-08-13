@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/organizer/page-header";
+import { StatusBadge } from "@/components/organizer/status-badge";
+import { EventCard } from "@/components/organizer/event-card";
+import { EmptyState } from "@/components/organizer/empty-state";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Plus, MapPin, Ticket, Loader2, Edit2, Trash2, Link, Check, Users, Pause, Play } from "lucide-react";
+import { Plus, Calendar, Loader2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link as WouterLink } from "wouter";
+
+type FilterTab = "all" | "active" | "paused" | "draft" | "completed" | "cancelled";
 
 export default function OrganizerEvents() {
   const { data: events, isLoading } = useEvents();
@@ -21,6 +25,8 @@ export default function OrganizerEvents() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -32,6 +38,42 @@ export default function OrganizerEvents() {
     ticketPrice: "",
     totalCapacity: "100",
   });
+
+  const tabs: { key: FilterTab; label: string }[] = [
+    { key: "all", label: "All Events" },
+    { key: "active", label: "Active" },
+    { key: "paused", label: "Paused" },
+    { key: "draft", label: "Draft" },
+    { key: "completed", label: "Completed" },
+    { key: "cancelled", label: "Cancelled" },
+  ];
+
+  const tabCounts = useMemo(() => {
+    if (!events) return {};
+    const counts: Record<string, number> = { all: events.length };
+    events.forEach((e: any) => {
+      counts[e.status] = (counts[e.status] || 0) + 1;
+    });
+    return counts;
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    if (!events) return [];
+    let result = events;
+    if (activeTab !== "all") {
+      result = result.filter((e: any) => e.status === activeTab);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (e: any) =>
+          e.title.toLowerCase().includes(q) ||
+          e.venue?.toLowerCase().includes(q) ||
+          e.description?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [events, activeTab, searchQuery]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,21 +99,18 @@ export default function OrganizerEvents() {
     const data = {
       ...formData,
       eventDate: eventDateObj,
-      eventDateText: format(eventDateObj, 'MMM d, yyyy • h:mm a'),
+      eventDateText: format(eventDateObj, "MMM d, yyyy • h:mm a"),
       ticketPrice: Math.round(priceFloat * 100),
-      totalCapacity: capacityInt
+      totalCapacity: capacityInt,
     };
 
     try {
       if (editingEvent) {
-        await updateEvent.mutateAsync({
-          id: editingEvent.id,
-          data
-        });
+        await updateEvent.mutateAsync({ id: editingEvent.id, data });
         toast({ title: "Event updated", description: "Your changes have been saved." });
         setEditingEvent(null);
       } else {
-        const created = await createEvent.mutateAsync(data);
+        await createEvent.mutateAsync(data);
         toast({ title: "Event created", description: "Your event has been created successfully." });
       }
       setIsOpen(false);
@@ -101,10 +140,7 @@ export default function OrganizerEvents() {
     const url = `${window.location.origin}/event/${eventId}`;
     navigator.clipboard.writeText(url);
     setCopiedId(eventId);
-    toast({
-      title: "Link Copied",
-      description: "Public event link copied to clipboard.",
-    });
+    toast({ title: "Link Copied", description: "Public event link copied to clipboard." });
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -133,153 +169,192 @@ export default function OrganizerEvents() {
 
   return (
     <DashboardLayout role="organizer">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-display font-bold">My Events</h2>
-          <p className="text-muted-foreground mt-1">Manage your events and ticket sales.</p>
-        </div>
-        
-        <Dialog open={isOpen} onOpenChange={(open) => {
-          setIsOpen(open);
-          if (!open) {
-            setEditingEvent(null);
-            setFormData({ title: "", description: "", bannerUrl: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "" });
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button className="hover-elevate gap-2">
-              <Plus className="w-4 h-4" /> Create Event
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[650px] max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingEvent ? "Edit Event" : "Create New Event"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Event Title</Label>
-                <Input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea required rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Banner Image URL</Label>
-                <Input placeholder="https://images.unsplash.com/photo..." value={formData.bannerUrl} onChange={e => setFormData({...formData, bannerUrl: e.target.value})} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date & Time</Label>
-                  <Input required type="datetime-local" value={formData.eventDate} onChange={e => setFormData({...formData, eventDate: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Venue</Label>
-                  <Input required value={formData.venue} onChange={e => setFormData({...formData, venue: e.target.value})} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Ticket Type</Label>
-                  <Input required value={formData.ticketTypes} onChange={e => setFormData({...formData, ticketTypes: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Price (EUR)</Label>
-                  <Input required type="number" min="0" step="0.01" value={formData.ticketPrice} onChange={e => setFormData({...formData, ticketPrice: e.target.value})} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Total Capacity (Number of tickets)</Label>
-                <Input required type="number" min="1" value={formData.totalCapacity} onChange={e => setFormData({...formData, totalCapacity: e.target.value})} />
-              </div>
-              <Button type="submit" className="w-full" disabled={createEvent.isPending || updateEvent.isPending}>
-                {(createEvent.isPending || updateEvent.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingEvent ? "Update Event" : "Create Event")}
+      <PageHeader
+        title="Events"
+        subtitle="Manage your events, showtimes and ticket sales."
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative hidden sm:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-56 h-9 bg-white border-gray-200 text-sm"
+            />
+          </div>
+
+          <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setEditingEvent(null);
+                setFormData({ title: "", description: "", bannerUrl: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100" });
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 h-9 text-sm">
+                <Plus className="w-4 h-4" />
+                Create Event
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[650px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold">
+                  {editingEvent ? "Edit Event" : "Create New Event"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreate} className="space-y-5 mt-2">
+                {/* Basic Information */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Basic Information</h4>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Event Title</Label>
+                      <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="h-9" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Description</Label>
+                      <Textarea required rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="text-sm" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Banner Image URL</Label>
+                      <Input placeholder="https://images.unsplash.com/photo..." value={formData.bannerUrl} onChange={(e) => setFormData({ ...formData, bannerUrl: e.target.value })} className="h-9" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Schedule & Venue */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Schedule & Venue</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Date & Time</Label>
+                      <Input required type="datetime-local" value={formData.eventDate} onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })} className="h-9" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Venue</Label>
+                      <Input required value={formData.venue} onChange={(e) => setFormData({ ...formData, venue: e.target.value })} className="h-9" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ticketing */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Ticketing</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Ticket Type</Label>
+                      <Input required value={formData.ticketTypes} onChange={(e) => setFormData({ ...formData, ticketTypes: e.target.value })} className="h-9" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Price (EUR)</Label>
+                      <Input required type="number" min="0" step="0.01" value={formData.ticketPrice} onChange={(e) => setFormData({ ...formData, ticketPrice: e.target.value })} className="h-9" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Capacity</Label>
+                      <Input required type="number" min="1" value={formData.totalCapacity} onChange={(e) => setFormData({ ...formData, totalCapacity: e.target.value })} className="h-9" />
+                    </div>
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" disabled={createEvent.isPending || updateEvent.isPending}>
+                  {createEvent.isPending || updateEvent.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : editingEvent ? (
+                    "Update Event"
+                  ) : (
+                    "Create Event"
+                  )}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </PageHeader>
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1">
+        {tabs.map((tab) => {
+          const count = tabCounts[tab.key] || 0;
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                isActive
+                  ? "bg-indigo-50 text-indigo-700"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+              {count > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    isActive ? "bg-indigo-100 text-indigo-600" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          <div className="col-span-full py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-        ) : events?.length === 0 ? (
-          <div className="col-span-full bg-card rounded-2xl border border-border p-16 text-center shadow-sm">
-            <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-20" />
-            <h3 className="text-xl font-medium mb-2">No events yet</h3>
-            <p className="text-muted-foreground">Create your first event to start selling tickets.</p>
-          </div>
-        ) : (
-          events?.map((event: any) => (
-            <div key={event.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
-              {event.bannerUrl && (
-                <div className="h-40 w-full overflow-hidden">
-                  <img src={event.bannerUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+      {/* Events Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div className="aspect-[16/9] bg-gray-100 animate-pulse" />
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between">
+                  <div className="h-5 w-16 bg-gray-100 rounded-full animate-pulse" />
+                  <div className="h-5 w-12 bg-gray-100 rounded animate-pulse" />
                 </div>
-              )}
-              <div className="p-6 flex-1">
-                <div className="flex justify-between items-start mb-4">
-                  <Badge variant={event.status === 'active' ? 'default' : 'secondary'} className="capitalize">
-                    {event.status}
-                  </Badge>
-                  <span className="font-bold text-lg text-primary">€{(event.ticketPrice / 100).toFixed(2)}</span>
-                </div>
-                <h3 className="text-xl font-bold font-display mb-2 line-clamp-1">{event.title}</h3>
-                <p className="text-muted-foreground text-sm line-clamp-2 mb-6">{event.description}</p>
-                
-                <div className="space-y-3 mt-auto">
-                  <div className="flex items-center text-sm text-zinc-600">
-                    <CalendarIcon className="w-4 h-4 mr-3 opacity-70" />
-                    {format(new Date(event.eventDate), 'MMM d, yyyy • h:mm a')}
-                  </div>
-                  <div className="flex items-center text-sm text-zinc-600">
-                    <MapPin className="w-4 h-4 mr-3 opacity-70" />
-                    {event.venue}
-                  </div>
-                  <div className="flex items-center text-sm text-zinc-600">
-                    <Ticket className="w-4 h-4 mr-3 opacity-70" />
-                    {event.ticketTypes}
-                  </div>
-                  <div className="flex items-center text-sm font-medium text-primary bg-primary/5 p-2 rounded-lg">
-                    <div className="flex-1">Tickets Sold</div>
-                    <div className="text-right">{event.totalCapacity - event.remainingCapacity} / {event.totalCapacity}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 border-t border-border bg-muted/20 flex flex-wrap justify-between items-center gap-2">
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" className="h-8 gap-2" onClick={() => handleCopyLink(event.id)}>
-                    {copiedId === event.id ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
-                    Buyer Link
-                  </Button>
-                  <Button
-                    variant={event.status === "active" ? "outline" : "secondary"}
-                    size="sm"
-                    className="h-8 gap-2"
-                    onClick={() => handleToggleStatus(event)}
-                    disabled={updateEvent.isPending}
-                  >
-                    {event.status === "active" ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                    {event.status === "active" ? "Pause" : "Activate"}
-                  </Button>
-                  <WouterLink href={`/organizer/events/${event.id}/attendees`}>
-                    <Button variant="secondary" size="sm" className="h-8 gap-2">
-                      <Users className="w-3.5 h-3.5" />
-                      Attendees
-                    </Button>
-                  </WouterLink>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(event)}>
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(event.id)}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+                <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
+                <div className="h-3 w-full bg-gray-100 rounded animate-pulse" />
+                <div className="h-3 w-2/3 bg-gray-100 rounded animate-pulse" />
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      ) : filteredEvents.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100">
+          <EmptyState
+            icon={<Calendar className="w-7 h-7" />}
+            title={searchQuery || activeTab !== "all" ? "No events match your filters" : "No events yet"}
+            description={
+              searchQuery || activeTab !== "all"
+                ? "Try adjusting your search or filters to find what you're looking for."
+                : "Create your first event to start selling tickets."
+            }
+            action={
+              !searchQuery && activeTab === "all"
+                ? { label: "Create Event", onClick: () => setIsOpen(true) }
+                : undefined
+            }
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {filteredEvents.map((event: any) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onToggleStatus={handleToggleStatus}
+              onCopyLink={handleCopyLink}
+              copiedId={copiedId}
+            />
+          ))}
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -10,14 +10,16 @@ import {
   useResendTickets,
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Ticket, CheckCircle2, Loader2, PlusCircle, Edit3, Trash2, Filter, Mail, Send } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/organizer/page-header";
+import { StatusBadge } from "@/components/organizer/status-badge";
+import { EmptyState } from "@/components/organizer/empty-state";
 
 export default function OrganizerBookings() {
   const { data: bookings, isLoading: isBookingsLoading } = useBookings();
@@ -84,7 +86,7 @@ export default function OrganizerBookings() {
     try {
       await manualCreate.mutateAsync({
         ...formData,
-        ticketQuantity: parseInt(formData.ticketQuantity)
+        ticketQuantity: parseInt(formData.ticketQuantity),
       });
       setIsOpen(false);
       setFormData({ eventId: "", customerName: "", customerEmail: "", customerPhone: "", ticketQuantity: "1" });
@@ -148,29 +150,39 @@ export default function OrganizerBookings() {
     setIsResendConfirmOpen(true);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'paid': return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-[11px] px-1.5 py-0 leading-5">Paid</Badge>;
-      case 'payment_submitted': return <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-[11px] px-1.5 py-0 leading-5">Verify</Badge>;
-      case 'pending_payment': return <Badge variant="secondary" className="text-[11px] px-1.5 py-0 leading-5">Pending</Badge>;
-      default: return <Badge variant="outline" className="text-[11px] px-1.5 py-0 leading-5 capitalize">{status}</Badge>;
-    }
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      "bg-indigo-100 text-indigo-700",
+      "bg-sky-100 text-sky-700",
+      "bg-violet-100 text-violet-700",
+      "bg-rose-100 text-rose-700",
+      "bg-amber-100 text-amber-700",
+    ];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
   };
 
   return (
     <DashboardLayout role="organizer">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-display font-bold">Bookings & Orders</h2>
-          <p className="text-muted-foreground text-sm mt-0.5">Review customer orders and verify payments.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <PageHeader
+        title="Bookings"
+        subtitle="Review customer orders and verify payments."
+      >
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Filter className="w-4 h-4 text-gray-400 shrink-0" />
             <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-              <SelectTrigger className="w-full sm:w-[200px] h-9">
-                <SelectValue placeholder="Filter by event" />
+              <SelectTrigger className="w-[180px] h-9 bg-white border-gray-200 text-sm">
+                <SelectValue placeholder="All events" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All events</SelectItem>
@@ -182,27 +194,41 @@ export default function OrganizerBookings() {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" size="sm" onClick={handleDownloadCsv}>Download CSV</Button>
-          <Dialog open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) {
-              setFormData({ eventId: "", customerName: "", customerEmail: "", customerPhone: "", ticketQuantity: "1" });
-            }
-          }}>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadCsv}
+            className="h-9 border-gray-200 text-gray-600 hover:bg-gray-50 gap-2 text-sm"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </Button>
+
+          <Dialog
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setFormData({ eventId: "", customerName: "", customerEmail: "", customerPhone: "", ticketQuantity: "1" });
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5">
-                <PlusCircle className="w-4 h-4" /> Manual Ticket
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 h-9 text-sm">
+                <Plus className="w-4 h-4" />
+                Manual Ticket
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Create Manual Ticket</DialogTitle>
+                <DialogTitle className="text-lg font-semibold">Create Manual Ticket</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleManualCreate} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label>Select Event</Label>
-                  <Select value={formData.eventId} onValueChange={(val) => setFormData({...formData, eventId: val})}>
-                    <SelectTrigger>
+              <form onSubmit={handleManualCreate} className="space-y-4 mt-2">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Select Event</Label>
+                  <Select value={formData.eventId} onValueChange={(val) => setFormData({ ...formData, eventId: val })}>
+                    <SelectTrigger className="h-9">
                       <SelectValue placeholder="Select an event" />
                     </SelectTrigger>
                     <SelectContent>
@@ -214,119 +240,115 @@ export default function OrganizerBookings() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Customer Name</Label>
-                  <Input required value={formData.customerName} onChange={e => setFormData({...formData, customerName: e.target.value})} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Customer Name</Label>
+                  <Input required value={formData.customerName} onChange={(e) => setFormData({ ...formData, customerName: e.target.value })} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Customer Email</Label>
-                  <Input required type="email" value={formData.customerEmail} onChange={e => setFormData({...formData, customerEmail: e.target.value})} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Customer Email</Label>
+                  <Input required type="email" value={formData.customerEmail} onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Customer Phone</Label>
-                  <Input required type="tel" value={formData.customerPhone} onChange={e => setFormData({...formData, customerPhone: e.target.value})} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Customer Phone</Label>
+                  <Input required type="tel" value={formData.customerPhone} onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Ticket Quantity</Label>
-                  <Input required type="number" min="1" value={formData.ticketQuantity} onChange={e => setFormData({...formData, ticketQuantity: e.target.value})} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Ticket Quantity</Label>
+                  <Input required type="number" min="1" value={formData.ticketQuantity} onChange={(e) => setFormData({ ...formData, ticketQuantity: e.target.value })} className="h-9" />
                 </div>
-                <Button type="submit" className="w-full" disabled={manualCreate.isPending}>
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" disabled={manualCreate.isPending}>
                   {manualCreate.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Generate Tickets"}
                 </Button>
               </form>
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+      </PageHeader>
 
-      {/* Table Card */}
-      <div className="bg-card rounded-xl border border-border shadow-sm">
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {isLoadingState ? (
           <div className="p-12 flex justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            <div className="space-y-4 w-full max-w-2xl">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <div className="w-9 h-9 bg-gray-100 rounded-full animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-32 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-5 w-16 bg-gray-100 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : isEmptyState ? (
-          <div className="p-12 text-center text-muted-foreground">
-            <Ticket className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="text-sm">No bookings have been made yet.</p>
-          </div>
+          <EmptyState
+            icon={<Ticket className="w-7 h-7" />}
+            title="No bookings yet"
+            description="Bookings will appear here when customers purchase tickets."
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+            <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
               <colgroup>
-                <col style={{ width: '19%' }} />
-                <col style={{ width: '19%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '5%' }} />
-                <col style={{ width: '8%' }} />
-                <col style={{ width: '9%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '9%' }} />
-                <col style={{ width: '7%' }} />
+                <col style={{ width: "22%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "16%" }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
-                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Event</th>
-                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Mobile</th>
-                  <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Qty</th>
-                  <th className="text-right px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
-                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                  <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden xl:table-cell">Ref #</th>
-                  <th className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sent</th>
-                  <th className="text-right px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Event</th>
+                  <th className="text-center px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
+                  <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="text-center px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Sent</th>
+                  <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredBookings.map((row: any) => (
-                  <tr key={row.booking.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    {/* Customer */}
-                    <td className="px-3 py-3 align-top">
-                      <p className="font-medium text-foreground leading-snug">{row.booking.customerName}</p>
-                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 break-all">{row.booking.customerEmail}</p>
+                  <tr key={row.booking.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 ${getAvatarColor(row.booking.customerName)}`}>
+                          {getInitials(row.booking.customerName)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate text-[13px]">{row.booking.customerName}</p>
+                          <p className="text-[11px] text-gray-500 truncate">{row.booking.customerEmail}</p>
+                        </div>
+                      </div>
                     </td>
-                    {/* Event */}
-                    <td className="px-3 py-3 align-top">
-                      <p className="font-medium text-foreground leading-snug line-clamp-2">{row.event.title}</p>
-                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                        {format(new Date(row.event.eventDate), 'MMM d, yyyy')}
-                      </p>
+                    <td className="px-5 py-3.5">
+                      <p className="font-medium text-gray-900 line-clamp-1 text-[13px]">{row.event.title}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">{format(new Date(row.event.eventDate), "MMM d, yyyy")}</p>
                     </td>
-                    {/* Mobile */}
-                    <td className="px-3 py-3 align-top text-muted-foreground text-[13px] hidden lg:table-cell whitespace-nowrap">
-                      {row.booking.customerPhone}
-                    </td>
-                    {/* Qty */}
-                    <td className="px-3 py-3 align-top text-center font-medium text-foreground">
-                      {row.booking.ticketQuantity}
-                    </td>
-                    {/* Total */}
-                    <td className="px-3 py-3 align-top text-right font-semibold text-foreground whitespace-nowrap">
+                    <td className="px-5 py-3.5 text-center font-medium text-gray-900">{row.booking.ticketQuantity}</td>
+                    <td className="px-5 py-3.5 text-right font-semibold text-gray-900 whitespace-nowrap">
                       €{((row.event.ticketPrice * row.booking.ticketQuantity) / 100).toFixed(2)}
                     </td>
-                    {/* Status */}
-                    <td className="px-3 py-3 align-top">
-                      {getStatusBadge(row.booking.status)}
+                    <td className="px-5 py-3.5">
+                      <StatusBadge status={row.booking.status} />
                     </td>
-                    {/* Ref # */}
-                    <td className="px-3 py-3 align-top text-[11px] text-muted-foreground font-mono break-all hidden xl:table-cell">
-                      {row.booking.transactionReference || '—'}
-                    </td>
-                    {/* Tickets Sent */}
-                    <td className="px-3 py-3 align-top text-center">
-                      {row.booking.status === 'paid' ? (
-                        <span className="inline-flex items-center gap-0.5 text-emerald-600">
+                    <td className="px-5 py-3.5 text-center hidden lg:table-cell">
+                      {row.booking.status === "paid" ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span className="text-[11px] font-medium hidden xl:inline">Yes</span>
+                          <span className="text-[11px] font-medium">Yes</span>
                         </span>
                       ) : (
-                        <span className="text-muted-foreground text-[11px]">—</span>
+                        <span className="text-gray-400 text-[11px]">—</span>
                       )}
                     </td>
-                    {/* Actions */}
-                    <td className="px-3 py-3 align-top">
-                      <div className="flex justify-end items-center gap-0.5">
-                        {row.booking.status === 'payment_submitted' && (
+                    <td className="px-5 py-3.5">
+                      <div className="flex justify-end items-center gap-1">
+                        {row.booking.status === "payment_submitted" && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -338,11 +360,11 @@ export default function OrganizerBookings() {
                             <CheckCircle2 className="w-4 h-4" />
                           </Button>
                         )}
-                        {row.booking.status === 'paid' && (
+                        {row.booking.status === "paid" && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            className="h-7 w-7 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
                             title="Resend tickets"
                             onClick={() => openResendConfirm(row)}
                             disabled={resendTickets.isPending}
@@ -353,7 +375,7 @@ export default function OrganizerBookings() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          className="h-7 w-7 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                           title="Edit"
                           onClick={() => openEditDialog(row)}
                         >
@@ -362,7 +384,7 @@ export default function OrganizerBookings() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          className="h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50"
                           title="Delete"
                           onClick={() => handleDeleteBooking(row)}
                         >
@@ -382,12 +404,12 @@ export default function OrganizerBookings() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Booking</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Edit Booking</DialogTitle>
           </DialogHeader>
           {editingBooking && (
-            <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Customer Name</Label>
+            <form onSubmit={handleEditSubmit} className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Customer Name</Label>
                 <Input
                   required
                   value={editingBooking.booking.customerName}
@@ -397,10 +419,11 @@ export default function OrganizerBookings() {
                       booking: { ...editingBooking.booking, customerName: e.target.value },
                     })
                   }
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Customer Email</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Customer Email</Label>
                 <Input
                   required
                   type="email"
@@ -411,10 +434,11 @@ export default function OrganizerBookings() {
                       booking: { ...editingBooking.booking, customerEmail: e.target.value },
                     })
                   }
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Customer Phone</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Customer Phone</Label>
                 <Input
                   required
                   type="tel"
@@ -425,9 +449,10 @@ export default function OrganizerBookings() {
                       booking: { ...editingBooking.booking, customerPhone: e.target.value },
                     })
                   }
+                  className="h-9"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={updateBooking.isPending}>
+              <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" disabled={updateBooking.isPending}>
                 {updateBooking.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
               </Button>
             </form>
@@ -439,26 +464,30 @@ export default function OrganizerBookings() {
       <Dialog open={isResendConfirmOpen} onOpenChange={setIsResendConfirmOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Resend Tickets</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg font-semibold">Resend Tickets</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
               This will re-send the confirmation email with all tickets to <strong>{bookingToResend?.booking.customerEmail}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
-              <p><strong>Customer:</strong> {bookingToResend?.booking.customerName}</p>
-              <p><strong>Event:</strong> {bookingToResend?.event.title}</p>
-              <p><strong>Quantity:</strong> {bookingToResend?.booking.ticketQuantity} tickets</p>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+              <p>
+                <span className="text-gray-500">Customer:</span> <span className="font-medium text-gray-900">{bookingToResend?.booking.customerName}</span>
+              </p>
+              <p>
+                <span className="text-gray-500">Event:</span> <span className="font-medium text-gray-900">{bookingToResend?.event.title}</span>
+              </p>
+              <p>
+                <span className="text-gray-500">Quantity:</span> <span className="font-medium text-gray-900">{bookingToResend?.booking.ticketQuantity} tickets</span>
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsResendConfirmOpen(false)}>Cancel</Button>
-            <Button
-              className="gap-2"
-              onClick={handleResendTickets}
-              disabled={resendTickets.isPending}
-            >
-              {resendTickets.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+            <Button variant="outline" onClick={() => setIsResendConfirmOpen(false)} className="border-gray-200 text-gray-600">
+              Cancel
+            </Button>
+            <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleResendTickets} disabled={resendTickets.isPending}>
+              {resendTickets.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Confirm Resend
             </Button>
           </DialogFooter>
