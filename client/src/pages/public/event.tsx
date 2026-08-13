@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { usePublicEvent, useCreateBooking, useSubmitPayment, useConfirmPayPalPayment } from "@/hooks/use-public";
@@ -64,6 +64,7 @@ export default function PublicEvent() {
   }, [eventId]);
 
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", qty: 1 });
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (step === 2 && bank?.paymentMethod === "paypal" && bank?.paymentLink && bookingId) {
@@ -320,7 +321,7 @@ export default function PublicEvent() {
                       <p className="text-sm text-gray-500">All tickets for this event have been sold.</p>
                     </div>
                   ) : (
-                    <>
+                    <form ref={formRef} onSubmit={handleBook}>
                       {/* Ticket Type Card */}
                       <div className="border border-gray-200 rounded-xl p-5 mb-6">
                         <div className="flex items-center justify-between mb-4">
@@ -411,7 +412,6 @@ export default function PublicEvent() {
                       <div className="hidden lg:block pt-2">
                         <Button
                           type="submit"
-                          form="booking-form"
                           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-12 text-sm font-semibold gap-2"
                           disabled={createBooking.isPending}
                         >
@@ -424,7 +424,7 @@ export default function PublicEvent() {
                           )}
                         </Button>
                       </div>
-                    </>
+                    </form>
                   )}
                 </div>
 
@@ -681,7 +681,6 @@ export default function PublicEvent() {
                       {step === 1 && !isPaused && !isSoldOut && (
                         <Button
                           type="submit"
-                          form="booking-form"
                           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-12 text-sm font-semibold gap-2"
                           disabled={createBooking.isPending}
                         >
@@ -711,11 +710,6 @@ export default function PublicEvent() {
         </div>
       </div>
 
-      {/* Hidden form for mobile submit */}
-      {step === 1 && !isPaused && !isSoldOut && (
-        <form id="booking-form" onSubmit={handleBook} className="hidden" />
-      )}
-
       {/* Mobile Sticky Checkout Bar */}
       {step === 1 && !isPaused && !isSoldOut && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 z-50" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
@@ -725,8 +719,8 @@ export default function PublicEvent() {
               <p className="text-lg font-bold text-gray-900">€{totalAmount}</p>
             </div>
             <Button
-              type="submit"
-              form="booking-form"
+              type="button"
+              onClick={() => formRef.current?.requestSubmit()}
               className="bg-indigo-600 hover:bg-indigo-700 text-white h-11 px-6 text-sm font-semibold gap-2"
               disabled={createBooking.isPending}
             >
