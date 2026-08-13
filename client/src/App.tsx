@@ -17,6 +17,7 @@ import OrganizerSignup from "./pages/public/organizer-signup";
 import Login from "./pages/auth/login";
 import AdminDashboard from "./pages/admin/dashboard";
 import OrganizerEvents from "./pages/organizer/events";
+import OrganizerDashboard from "./pages/organizer/dashboard";
 import AttendeeList from "./pages/organizer/attendees";
 import OrganizerBookings from "./pages/organizer/bookings";
 import OrganizerScan from "./pages/organizer/scan";
@@ -78,7 +79,7 @@ function Router() {
 
       {/* Organizer Routes */}
       <Route path="/organizer">
-        {() => <ProtectedRoute component={OrganizerEvents} roleRequired="organizer" />}
+        {() => <ProtectedRoute component={OrganizerDashboard} roleRequired="organizer" />}
       </Route>
       <Route path="/organizer/events">
         {() => <ProtectedRoute component={OrganizerEvents} roleRequired="organizer" />}
