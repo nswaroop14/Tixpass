@@ -41,6 +41,7 @@ export default function OrganizerBookings() {
   });
 
   const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
   const [isResendConfirmOpen, setIsResendConfirmOpen] = useState(false);
@@ -48,9 +49,15 @@ export default function OrganizerBookings() {
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
-    if (!selectedEventId) return [];
-    return bookings.filter((row: any) => row.event.id === selectedEventId);
-  }, [bookings, selectedEventId]);
+    let result = bookings;
+    if (selectedEventId) {
+      result = result.filter((row: any) => row.event.id === selectedEventId);
+    }
+    if (selectedStatus) {
+      result = result.filter((row: any) => row.booking.status === selectedStatus);
+    }
+    return [...result].sort((a: any, b: any) => new Date(b.booking.createdAt).getTime() - new Date(a.booking.createdAt).getTime());
+  }, [bookings, selectedEventId, selectedStatus]);
 
   const isLoadingState = isBookingsLoading || isEventsLoading;
   const isEmptyState = !filteredBookings || filteredBookings.length === 0;
@@ -180,16 +187,29 @@ export default function OrganizerBookings() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-            <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+            <Select value={selectedEventId || "all"} onValueChange={(v) => setSelectedEventId(v === "all" ? "" : v)}>
               <SelectTrigger className="w-[180px] h-9 bg-white border-gray-200 text-sm">
-                <SelectValue placeholder="Select an event" />
+                <SelectValue placeholder="All Events" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
                 {events?.map((event: any) => (
                   <SelectItem key={event.id} value={event.id}>
                     {event.title}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedStatus || "all"} onValueChange={(v) => setSelectedStatus(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[150px] h-9 bg-white border-gray-200 text-sm">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="payment_submitted">Pending Review</SelectItem>
+                <SelectItem value="pending_payment">Pending Payment</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -282,11 +302,11 @@ export default function OrganizerBookings() {
             </div>
           </div>
         ) : isEmptyState ? (
-          <EmptyState
-            icon={<Ticket className="w-7 h-7" />}
-            title={selectedEventId ? "No bookings for this event" : "Select an event to view bookings"}
-            description={selectedEventId ? "No bookings have been made yet for this event." : "Choose an event from the filter above to view its bookings."}
-          />
+            <EmptyState
+              icon={<Ticket className="w-7 h-7" />}
+              title={selectedEventId ? "No bookings for this event" : "No bookings yet"}
+              description={selectedEventId ? "No bookings have been made yet for this event." : "When customers book tickets, their orders will appear here."}
+            />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>

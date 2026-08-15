@@ -14,7 +14,7 @@ import { format } from "date-fns";
 import { Plus, Calendar, Loader2, Search, Upload, X, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type FilterTab = "all" | "active" | "paused" | "draft" | "completed" | "cancelled";
+type FilterTab = "all" | "active" | "paused" | "draft" | "past";
 
 export default function OrganizerEvents() {
   const { data: events, isLoading } = useEvents();
@@ -49,24 +49,33 @@ export default function OrganizerEvents() {
     { key: "active", label: "Active" },
     { key: "paused", label: "Paused" },
     { key: "draft", label: "Draft" },
-    { key: "completed", label: "Completed" },
-    { key: "cancelled", label: "Cancelled" },
+    { key: "past", label: "Past" },
   ];
 
   const tabCounts = useMemo(() => {
     if (!events) return {};
+    const now = new Date();
     const counts: Record<string, number> = { all: events.length };
     events.forEach((e: any) => {
-      counts[e.status] = (counts[e.status] || 0) + 1;
+      if (new Date(e.eventDate) < now) {
+        counts["past"] = (counts["past"] || 0) + 1;
+      } else {
+        counts[e.status] = (counts[e.status] || 0) + 1;
+      }
     });
     return counts;
   }, [events]);
 
   const filteredEvents = useMemo(() => {
     if (!events) return [];
+    const now = new Date();
     let result = events;
-    if (activeTab !== "all") {
-      result = result.filter((e: any) => e.status === activeTab);
+    if (activeTab === "past") {
+      result = result.filter((e: any) => new Date(e.eventDate) < now);
+    } else if (activeTab !== "all") {
+      result = result.filter((e: any) => e.status === activeTab && new Date(e.eventDate) >= now);
+    } else {
+      result = events;
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -77,12 +86,15 @@ export default function OrganizerEvents() {
           e.description?.toLowerCase().includes(q)
       );
     }
-    const statusOrder: Record<string, number> = { active: 0, paused: 1, draft: 2, completed: 3, cancelled: 4 };
+    const statusOrder: Record<string, number> = { active: 0, paused: 1, draft: 2 };
     return [...result].sort((a: any, b: any) => {
+      if (activeTab === "past") {
+        return new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime();
+      }
       const sa = statusOrder[a.status] ?? 5;
       const sb = statusOrder[b.status] ?? 5;
       if (sa !== sb) return sa - sb;
-      return new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime();
+      return new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
     });
   }, [events, activeTab, searchQuery]);
 

@@ -42,9 +42,10 @@ export function EventCard({
 }: EventCardProps) {
   const sold = event.totalCapacity - event.remainingCapacity;
   const pct = event.totalCapacity > 0 ? Math.round((sold / event.totalCapacity) * 100) : 0;
+  const isPast = new Date(event.eventDate) < new Date();
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col">
+    <div className={`bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col ${isPast ? "opacity-70" : ""}`}>
       {/* Poster */}
       <div className="aspect-[16/9] bg-gray-100 relative overflow-hidden">
         {event.bannerUrl ? (
