@@ -28,6 +28,24 @@ export async function initialize() {
   if (initPromise) return initPromise;
   
   initPromise = (async () => {
+    // Run safe migrations: add columns if missing (idempotent)
+    if (process.env.DATABASE_URL) {
+      try {
+        const { pool } = await import("./db.js");
+        const migrations = [
+          `ALTER TABLE events ADD COLUMN IF NOT EXISTS language text`,
+          `ALTER TABLE events ADD COLUMN IF NOT EXISTS screen text`,
+          `ALTER TABLE events ADD COLUMN IF NOT EXISTS notes text`,
+        ];
+        for (const sql of migrations) {
+          await pool.query(sql);
+        }
+        console.log("Schema migrations complete.");
+      } catch (e: any) {
+        console.error("Migration step failed (non-fatal):", e.message);
+      }
+    }
+
     // We pass a dummy server on Vercel as it's not actually used for listening
     const httpServer = createServer(app);
     await registerRoutes(httpServer, app);
