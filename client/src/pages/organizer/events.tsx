@@ -77,7 +77,13 @@ export default function OrganizerEvents() {
           e.description?.toLowerCase().includes(q)
       );
     }
-    return result;
+    const statusOrder: Record<string, number> = { active: 0, paused: 1, draft: 2, completed: 3, cancelled: 4 };
+    return [...result].sort((a: any, b: any) => {
+      const sa = statusOrder[a.status] ?? 5;
+      const sb = statusOrder[b.status] ?? 5;
+      if (sa !== sb) return sa - sb;
+      return new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime();
+    });
   }, [events, activeTab, searchQuery]);
 
   const handleCreate = async (e: React.FormEvent) => {
