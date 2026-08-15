@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/organizer/status-badge";
 import { EventCard } from "@/components/organizer/event-card";
 import { EmptyState } from "@/components/organizer/empty-state";
 import { format } from "date-fns";
-import { Plus, Calendar, Loader2, Search } from "lucide-react";
+import { Plus, Calendar, Loader2, Search, Upload, X, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type FilterTab = "all" | "active" | "paused" | "draft" | "completed" | "cancelled";
@@ -32,12 +32,17 @@ export default function OrganizerEvents() {
     title: "",
     description: "",
     bannerUrl: "",
+    language: "",
+    screen: "",
     venue: "",
     eventDate: "",
     ticketTypes: "General Admission",
     ticketPrice: "",
     totalCapacity: "100",
+    notes: "",
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const tabs: { key: FilterTab; label: string }[] = [
     { key: "all", label: "All Events" },
@@ -114,7 +119,8 @@ export default function OrganizerEvents() {
         toast({ title: "Event created", description: "Your event has been created successfully." });
       }
       setIsOpen(false);
-      setFormData({ title: "", description: "", bannerUrl: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100" });
+      setFormData({ title: "", description: "", bannerUrl: "", language: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
+      setImagePreview(null);
     } catch (err: any) {
       console.error("Create/Update event failed:", err);
       toast({ title: "Action failed", description: err?.message || "Unable to process your request.", variant: "destructive" });
@@ -127,12 +133,16 @@ export default function OrganizerEvents() {
       title: event.title,
       description: event.description,
       bannerUrl: event.bannerUrl || "",
+      language: event.language || "",
+      screen: event.screen || "",
       venue: event.venue,
       eventDate: format(new Date(event.eventDate), "yyyy-MM-dd'T'HH:mm"),
       ticketTypes: event.ticketTypes,
       ticketPrice: (event.ticketPrice / 100).toString(),
       totalCapacity: event.totalCapacity.toString(),
+      notes: event.notes || "",
     });
+    setImagePreview(event.bannerUrl || null);
     setIsOpen(true);
   };
 
@@ -190,7 +200,8 @@ export default function OrganizerEvents() {
               setIsOpen(open);
               if (!open) {
                 setEditingEvent(null);
-                setFormData({ title: "", description: "", bannerUrl: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100" });
+                setFormData({ title: "", description: "", bannerUrl: "", language: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
+                setImagePreview(null);
               }
             }}
           >
@@ -212,16 +223,59 @@ export default function OrganizerEvents() {
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Basic Information</h4>
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Event Title</Label>
-                      <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="h-9" />
+                      <Label className="text-sm">Event Name *</Label>
+                      <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="h-9" placeholder="e.g. Dhurandhar 2: The Revenge" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Description</Label>
+                      <Label className="text-sm">Description *</Label>
                       <Textarea required rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="text-sm" />
                     </div>
+                    {/* Image Upload */}
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Banner Image URL</Label>
-                      <Input placeholder="https://images.unsplash.com/photo..." value={formData.bannerUrl} onChange={(e) => setFormData({ ...formData, bannerUrl: e.target.value })} className="h-9" />
+                      <Label className="text-sm">Poster Image</Label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast({ title: "Image too large", description: "Please use an image under 5MB. Recommended: 1200×675px (16:9).", variant: "destructive" });
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const base64 = ev.target?.result as string;
+                            setFormData({ ...formData, bannerUrl: base64 });
+                            setImagePreview(base64);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                      {imagePreview ? (
+                        <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                          <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => { setFormData({ ...formData, bannerUrl: "" }); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                            className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
+                        >
+                          <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600 font-medium">Click to upload poster</p>
+                          <p className="text-[11px] text-gray-400 mt-1">JPEG, PNG or WebP. Max 5MB. Recommended: 1200×675px (16:9)</p>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -231,12 +285,22 @@ export default function OrganizerEvents() {
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Schedule & Venue</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Date & Time</Label>
+                      <Label className="text-sm">Date & Time *</Label>
                       <Input required type="datetime-local" value={formData.eventDate} onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })} className="h-9" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Venue</Label>
-                      <Input required value={formData.venue} onChange={(e) => setFormData({ ...formData, venue: e.target.value })} className="h-9" />
+                      <Label className="text-sm">Venue *</Label>
+                      <Input required value={formData.venue} onChange={(e) => setFormData({ ...formData, venue: e.target.value })} className="h-9" placeholder="e.g. K Cineplex - Nicosia" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Language</Label>
+                      <Input value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value })} className="h-9" placeholder="e.g. Hindi, English" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Screen</Label>
+                      <Input value={formData.screen} onChange={(e) => setFormData({ ...formData, screen: e.target.value })} className="h-9" placeholder="e.g. Screen 1, IMAX" />
                     </div>
                   </div>
                 </div>
@@ -246,17 +310,27 @@ export default function OrganizerEvents() {
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Ticketing</h4>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Ticket Type</Label>
+                      <Label className="text-sm">Ticket Type *</Label>
                       <Input required value={formData.ticketTypes} onChange={(e) => setFormData({ ...formData, ticketTypes: e.target.value })} className="h-9" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Price (EUR)</Label>
+                      <Label className="text-sm">Price (EUR) *</Label>
                       <Input required type="number" min="0" step="0.01" value={formData.ticketPrice} onChange={(e) => setFormData({ ...formData, ticketPrice: e.target.value })} className="h-9" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Capacity</Label>
+                      <Label className="text-sm">Capacity *</Label>
                       <Input required type="number" min="1" value={formData.totalCapacity} onChange={(e) => setFormData({ ...formData, totalCapacity: e.target.value })} className="h-9" />
                     </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Additional Notes</h4>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Notes (optional)</Label>
+                    <Textarea rows={2} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="text-sm" placeholder="e.g. No outside food allowed. ID required at entry." />
+                    <p className="text-[11px] text-gray-400">These notes will be included in the ticket emails sent to customers.</p>
                   </div>
                 </div>
 

@@ -93,6 +93,14 @@ export function EventCard({
               <span className="truncate">{event.venue}</span>
             </div>
           )}
+          {(event.language || event.screen) && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Ticket className="w-3.5 h-3.5 text-gray-400" />
+              <span>
+                {event.language}{event.language && event.screen ? " · " : ""}{event.screen}
+              </span>
+            </div>
+          )}
           {event.ticketTypes && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Ticket className="w-3.5 h-3.5 text-gray-400" />

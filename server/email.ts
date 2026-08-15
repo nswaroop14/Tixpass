@@ -156,9 +156,19 @@ export async function sendTicketsEmail(
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size:13px;color:#52525b;">
             <tr><td style="padding:4px 0;"><strong>Date:</strong> ${formatEventDate(new Date(event.eventDate), event.eventDateText)}</td></tr>
             <tr><td style="padding:4px 0;"><strong>Venue:</strong> ${event.venue}</td></tr>
+            ${event.screen ? `<tr><td style="padding:4px 0;"><strong>Screen:</strong> ${event.screen}</td></tr>` : ''}
+            ${event.language ? `<tr><td style="padding:4px 0;"><strong>Language:</strong> ${event.language}</td></tr>` : ''}
             <tr><td style="padding:4px 0;"><strong>Type:</strong> ${event.ticketTypes}</td></tr>
           </table>
         </td></tr>
+        ${event.notes ? `
+        <tr><td style="padding:0 16px 16px 16px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:8px;padding:12px;">
+            <tr><td style="font-size:12px;color:#6b7280;padding:4px 8px;">
+              <strong>Note:</strong> ${event.notes}
+            </td></tr>
+          </table>
+        </td></tr>` : ''}
         <tr><td style="padding:0 16px 16px 16px;text-align:center;font-size:12px;color:#71717a;">
           Show this QR code at the entrance for scanning.
         </td></tr>
@@ -211,7 +221,10 @@ export async function sendTicketsEmail(
       `EVENT DETAILS`,
       `Date: ${formatEventDate(new Date(event.eventDate), event.eventDateText)}`,
       `Venue: ${event.venue}`,
+      event.screen ? `Screen: ${event.screen}` : '',
+      event.language ? `Language: ${event.language}` : '',
       `Type: ${event.ticketTypes}`,
+      event.notes ? `\nNote: ${event.notes}` : '',
       ``,
       `TICKETS`,
       ...tickets.map(t => `Code: ${t.uniqueTicketCode}`),
@@ -222,7 +235,7 @@ export async function sendTicketsEmail(
       `Show the QR code at the entrance for scanning.`,
       ``,
       `If you have any questions, contact the event organizer.`
-    ].join("\n"),
+    ].filter(Boolean).join("\n"),
   };
 
   try {

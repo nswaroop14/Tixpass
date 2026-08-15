@@ -71,6 +71,8 @@ export const events = pgTable("events", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   bannerUrl: text("banner_url"),
+  language: text("language"),
+  screen: text("screen"),
   venue: text("venue").notNull(),
   eventDate: timestamp("event_date").notNull(),
   eventDateText: text("event_date_text"),
@@ -78,6 +80,7 @@ export const events = pgTable("events", {
   ticketPrice: integer("ticket_price").notNull(), // stored in cents (cents/euro)
   totalCapacity: integer("total_capacity").notNull().default(100),
   remainingCapacity: integer("remaining_capacity").notNull().default(100),
+  notes: text("notes"),
   status: text("status").notNull().default("active"), // 'active', 'paused'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

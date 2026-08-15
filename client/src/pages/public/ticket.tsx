@@ -84,6 +84,22 @@ export default function PublicTicket() {
                     <p className="text-sm font-semibold text-gray-900">{event.venue}</p>
                   </div>
                 </div>
+                {event.language && (
+                  <div className="flex items-start gap-3">
+                    <span className="w-4 h-4 text-gray-400 mt-0.5 text-xs font-bold">🌐</span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{event.language}</p>
+                    </div>
+                  </div>
+                )}
+                {event.screen && (
+                  <div className="flex items-start gap-3">
+                    <span className="w-4 h-4 text-gray-400 mt-0.5 text-xs font-bold">🎬</span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{event.screen}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Ticket Holder */}
@@ -127,6 +143,13 @@ export default function PublicTicket() {
               {isScanned && (
                 <div className="text-center p-3 bg-amber-50 text-amber-700 rounded-xl text-xs font-medium border border-amber-200">
                   This ticket has already been scanned at the venue.
+                </div>
+              )}
+
+              {event.notes && (
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1">Notes</p>
+                  <p className="text-xs text-gray-600 whitespace-pre-wrap">{event.notes}</p>
                 </div>
               )}
             </div>

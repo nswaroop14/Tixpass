@@ -441,6 +441,18 @@ export default function PublicEvent() {
                       <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Date & Time</p>
                       <p className="text-sm font-medium text-gray-900">{format(new Date(event.eventDate), "MMM d, yyyy · h:mm a")}</p>
                     </div>
+                    {event.language && (
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Language</p>
+                        <p className="text-sm font-medium text-gray-900">{event.language}</p>
+                      </div>
+                    )}
+                    {event.screen && (
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Screen</p>
+                        <p className="text-sm font-medium text-gray-900">{event.screen}</p>
+                      </div>
+                    )}
                     <div>
                       <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Ticket Type</p>
                       <p className="text-sm font-medium text-gray-900">{event.ticketTypes}</p>
@@ -450,6 +462,12 @@ export default function PublicEvent() {
                       <p className="text-sm font-medium text-gray-900">€{(event.ticketPrice / 100).toFixed(2)}</p>
                     </div>
                   </div>
+                  {event.notes && (
+                    <div className="mt-5 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                      <p className="text-[11px] text-amber-600 font-semibold uppercase tracking-wider mb-1">Important Notes</p>
+                      <p className="text-sm text-amber-800 whitespace-pre-wrap">{event.notes}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
