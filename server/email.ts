@@ -130,11 +130,9 @@ export async function sendTicketsEmail(
   customerName: string,
   event: Event,
   tickets: Ticket[],
-  organizerName?: string,
-  logoUrl?: string
+  organizerName?: string
 ) {
   const brandName = organizerName || "TixPass";
-  const absoluteLogoUrl = logoUrl?.startsWith("/") ? `${APP_URL}${logoUrl}` : logoUrl;
   console.log(`📧 Attempting to send tickets email to ${customerEmail} using ${process.env.SMTP_USER}...`);
   // If SMTP is not configured, skip sending but log a warning
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -193,7 +191,6 @@ export async function sendTicketsEmail(
         <tr><td align="center" style="padding:24px 12px;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:480px;">
             <tr><td style="background:#18181b;border-radius:16px 16px 0 0;padding:24px 20px;text-align:center;">
-              ${absoluteLogoUrl ? `<img src="${absoluteLogoUrl}" alt="${brandName}" height="40" style="display:block;margin:0 auto 8px auto;max-height:40px;max-width:160px;object-fit:contain;" />` : ''}
               <span style="font-size:24px;font-weight:700;color:#fff;">${brandName}</span>
             </td></tr>
             <tr><td style="background:#fff;padding:24px 20px;">

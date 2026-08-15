@@ -19,13 +19,11 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   const syncFailuresByEvent: Map<string, number> = new Map();
-  async function getOrganizerBranding(eventId: string): Promise<{ name: string; logoUrl?: string }> {
+  async function getOrganizerBranding(eventId: string): Promise<{ name: string }> {
     const event = await storage.getEvent(eventId);
     if (!event) return { name: "TixPass" };
     const org = await storage.getOrganizerById(event.organizerId);
-    const name = org?.brandName || org?.name || "TixPass";
-    const logoUrl = org?.logoUrl ? `/api/organizer/${org.id}/logo` : undefined;
-    return { name, logoUrl };
+    return { name: org?.brandName || org?.name || "TixPass" };
   }
   async function syncWithRetry(eventId: string, retries = 2) {
     let attempt = 0;
@@ -632,7 +630,7 @@ export async function registerRoutes(
         // Send email (AWAIT for serverless/vercel compatibility)
         try {
           const branding = await getOrganizerBranding(event.id);
-          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
+          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name);
         } catch (err) {
           console.error('Failed to send tickets email after approval:', err);
         }
@@ -950,28 +948,6 @@ export async function registerRoutes(
     }
   });
 
-  // Public endpoint to serve organizer logo as a real image (not base64)
-  app.get("/api/organizer/:organizerId/logo", async (req, res) => {
-    try {
-      const org = await storage.getOrganizerById(req.params.organizerId);
-      if (!org || !org.logoUrl) return res.status(404).json({ message: "Logo not found" });
-
-      if (org.logoUrl.startsWith("data:")) {
-        const match = org.logoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
-        if (!match) return res.status(400).json({ message: "Invalid logo data" });
-        const ext = match[1] === "jpeg" ? "jpg" : match[1];
-        const buf = Buffer.from(match[2], "base64");
-        res.setHeader("Content-Type", `image/${ext}`);
-        res.setHeader("Cache-Control", "public, max-age=86400");
-        return res.send(buf);
-      }
-
-      res.redirect(org.logoUrl);
-    } catch {
-      res.status(500).json({ message: "Failed to serve logo" });
-    }
-  });
-
   const runDailyReports = async () => {
     try {
       const organizers = await storage.getOrganizers();
@@ -1155,7 +1131,7 @@ export async function registerRoutes(
         try {
           console.log(`[PayPal] Sending confirmation email to ${booking.customerEmail}`);
           const branding = await getOrganizerBranding(event.id);
-          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
+          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name);
           console.log(`[PayPal] Email sent successfully`);
         } catch (err) {
           console.error('[PayPal] Failed to send tickets email:', err);
