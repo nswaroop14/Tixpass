@@ -119,6 +119,11 @@ export class DatabaseStorage implements IStorage {
     return org;
   }
 
+  async getOrganizerById(id: string): Promise<Organizer | undefined> {
+    const [org] = await db.select().from(organizers).where(eq(organizers.id, id));
+    return org;
+  }
+
   async createOrganizer(user: InsertUser, name: string): Promise<{organizer: Organizer, user: User}> {
     try {
       // 1. Create user

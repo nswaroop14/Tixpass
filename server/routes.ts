@@ -19,6 +19,12 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   const syncFailuresByEvent: Map<string, number> = new Map();
+  async function getOrganizerName(eventId: string): Promise<string> {
+    const event = await storage.getEvent(eventId);
+    if (!event) return "TixPass";
+    const org = await storage.getOrganizerById(event.organizerId);
+    return org?.name || "TixPass";
+  }
   async function syncWithRetry(eventId: string, retries = 2) {
     let attempt = 0;
     while (attempt <= retries) {
@@ -623,7 +629,8 @@ export async function registerRoutes(
       if (event) {
         // Send email (AWAIT for serverless/vercel compatibility)
         try {
-          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets);
+          const orgName = await getOrganizerName(event.id);
+          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
         } catch (err) {
           console.error('Failed to send tickets email after approval:', err);
         }
@@ -672,7 +679,8 @@ export async function registerRoutes(
       const tickets = await storage.getTicketsByBooking(booking.id);
       // Send email (AWAIT for serverless/vercel compatibility)
       try {
-        await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets);
+        const orgName = await getOrganizerName(event.id);
+        await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
       } catch (err) {
         console.error('Failed to send tickets email after manual creation:', err);
       }
@@ -713,7 +721,8 @@ export async function registerRoutes(
       }
 
       // Send email
-      await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets);
+      const orgName = await getOrganizerName(event.id);
+      await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
 
       // Log the resend action (non-fatal if it fails)
       try {
@@ -884,7 +893,8 @@ export async function registerRoutes(
     if (!event || event.deletedAt) {
       return res.status(404).json({ message: "Event not found" });
     }
-    res.status(200).json(event);
+    const org = await storage.getOrganizerById(event.organizerId);
+    res.status(200).json({ ...event, organizerName: org?.name || "TixPass" });
   });
 
   app.post(api.organizer.account.setReportEmail.path, authenticateToken, requireOrganizer, async (req: any, res) => {
@@ -1089,7 +1099,8 @@ export async function registerRoutes(
       if (event) {
         try {
           console.log(`[PayPal] Sending confirmation email to ${booking.customerEmail}`);
-          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets);
+          const orgName = await getOrganizerName(event.id);
+          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
           console.log(`[PayPal] Email sent successfully`);
         } catch (err) {
           console.error('[PayPal] Failed to send tickets email:', err);
@@ -1117,7 +1128,8 @@ export async function registerRoutes(
       if (!ticketData) {
         return res.status(404).json({ message: "Ticket not found" });
       }
-      res.status(200).json(ticketData);
+      const org = await storage.getOrganizerById(ticketData.event.organizerId);
+      res.status(200).json({ ...ticketData, organizerName: org?.name || "TixPass" });
     } catch (err) {
       console.error('Error fetching public ticket:', err);
       res.status(400).json({ message: "Invalid ticket ID" });

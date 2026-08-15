@@ -129,8 +129,10 @@ export async function sendTicketsEmail(
   customerEmail: string,
   customerName: string,
   event: Event,
-  tickets: Ticket[]
+  tickets: Ticket[],
+  organizerName?: string
 ) {
+  const brandName = organizerName || "TixPass";
   console.log(`📧 Attempting to send tickets email to ${customerEmail} using ${process.env.SMTP_USER}...`);
   // If SMTP is not configured, skip sending but log a warning
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -189,7 +191,7 @@ export async function sendTicketsEmail(
         <tr><td align="center" style="padding:24px 12px;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:480px;">
             <tr><td style="background:#18181b;border-radius:16px 16px 0 0;padding:24px 20px;text-align:center;">
-              <span style="font-size:24px;font-weight:700;color:#fff;">TixPass</span>
+              <span style="font-size:24px;font-weight:700;color:#fff;">${brandName}</span>
             </td></tr>
             <tr><td style="background:#fff;padding:24px 20px;">
               <p style="margin:0 0 16px 0;font-size:16px;color:#18181b;text-align:center;">

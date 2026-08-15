@@ -629,7 +629,7 @@ export default function PublicEvent() {
                     <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center">
                       <Ticket className="w-3 h-3 text-white" />
                     </div>
-                    <span className="text-xs font-bold tracking-wide">TixPass</span>
+                    <span className="text-xs font-bold tracking-wide">{(event as any).organizerName || "TixPass"}</span>
                   </div>
                   <h3 className="font-bold text-lg mb-3 leading-tight">{event.title}</h3>
                   <div className="space-y-2 text-sm">
