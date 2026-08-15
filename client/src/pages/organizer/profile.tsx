@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,10 @@ import {
   useOrganizerBankDetails,
   useSaveOrganizerBankDetails,
   useToggleBankLock,
+  useUpdateBranding,
+  useOrganizerProfile,
 } from "@/hooks/use-organizer";
-import { Loader2, Lock, Unlock, Mail, Shield, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Lock, Unlock, Mail, Shield, CreditCard, CheckCircle2, AlertCircle, Upload, X, Palette } from "lucide-react";
 import { PageHeader } from "@/components/organizer/page-header";
 
 export default function OrganizerProfile() {
@@ -19,6 +21,9 @@ export default function OrganizerProfile() {
   const bank = useOrganizerBankDetails();
   const saveBank = useSaveOrganizerBankDetails();
   const toggleLock = useToggleBankLock();
+  const updateBranding = useUpdateBranding();
+  const profile = useOrganizerProfile();
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +32,10 @@ export default function OrganizerProfile() {
     reportEmail: "",
     reportTime: "02:00",
     enabled: true,
+  });
+  const [branding, setBranding] = useState<{ brandName: string; logoUrl: string }>({
+    brandName: "",
+    logoUrl: "",
   });
   const [bankForm, setBankForm] = useState({
     bankName: "",
@@ -55,6 +64,50 @@ export default function OrganizerProfile() {
       }));
     }
   }, [bank.isLoading, bank.data]);
+
+  useEffect(() => {
+    if (!profile.isLoading && profile.data) {
+      setBranding({
+        brandName: profile.data.brandName || "",
+        logoUrl: profile.data.logoUrl || "",
+      });
+    }
+  }, [profile.isLoading, profile.data]);
+
+  const handleBrandingSave = async () => {
+    try {
+      await updateBranding.mutateAsync({ brandName: branding.brandName, logoUrl: branding.logoUrl });
+      setSuccess("Branding updated successfully");
+    } catch {
+      setError("Failed to update branding");
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Logo must be under 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 200;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        setBranding({ ...branding, logoUrl: canvas.toDataURL("image/png") });
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +157,62 @@ export default function OrganizerProfile() {
               </p>
             </div>
           )}
+
+          {/* Branding Section */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-6 pt-5 pb-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Palette className="w-4 h-4 text-indigo-500" />
+                <h3 className="text-sm font-semibold text-gray-900">Branding</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">Customize the name and logo shown on ticket emails.</p>
+            </div>
+            <div className="px-6 pb-5 space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Brand Name</Label>
+                <Input
+                  value={branding.brandName}
+                  onChange={(e) => setBranding({ ...branding, brandName: e.target.value })}
+                  className="h-9"
+                  placeholder="e.g. Indian Cinema Connectx"
+                />
+                <p className="text-[11px] text-gray-400">Shown as the header in ticket emails. Leave blank to use your organizer name.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Logo</Label>
+                <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                {branding.logoUrl ? (
+                  <div className="relative inline-block">
+                    <img src={branding.logoUrl} alt="Logo" className="h-16 w-auto max-w-[200px] object-contain bg-gray-50 rounded-lg border border-gray-200 p-2" />
+                    <button
+                      type="button"
+                      onClick={() => setBranding({ ...branding, logoUrl: "" })}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="flex items-center gap-2 border-2 border-dashed border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload logo (optional)
+                  </button>
+                )}
+                <p className="text-[11px] text-gray-400">Displayed above the brand name in emails. Max 2MB.</p>
+              </div>
+              <Button
+                onClick={handleBrandingSave}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white h-9 text-sm"
+                disabled={updateBranding.isPending}
+              >
+                {updateBranding.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Branding"}
+              </Button>
+            </div>
+          </div>
 
           {/* Password Section */}
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">

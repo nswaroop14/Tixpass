@@ -16,6 +16,8 @@ export const organizers = pgTable("organizers", {
   id: uuid("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
   userId: uuid("user_id").references(() => users.id).notNull(),
   name: text("name").notNull(),
+  brandName: text("brand_name"),
+  logoUrl: text("logo_url"),
   status: text("status").notNull().default("active"), // 'active', 'paused'
   reportEmail: text("report_email"),
   reportTime: text("report_time"),

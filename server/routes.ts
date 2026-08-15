@@ -19,11 +19,11 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   const syncFailuresByEvent: Map<string, number> = new Map();
-  async function getOrganizerName(eventId: string): Promise<string> {
+  async function getOrganizerBranding(eventId: string): Promise<{ name: string; logoUrl?: string }> {
     const event = await storage.getEvent(eventId);
-    if (!event) return "TixPass";
+    if (!event) return { name: "TixPass" };
     const org = await storage.getOrganizerById(event.organizerId);
-    return org?.name || "TixPass";
+    return { name: org?.brandName || org?.name || "TixPass", logoUrl: org?.logoUrl || undefined };
   }
   async function syncWithRetry(eventId: string, retries = 2) {
     let attempt = 0;
@@ -629,8 +629,8 @@ export async function registerRoutes(
       if (event) {
         // Send email (AWAIT for serverless/vercel compatibility)
         try {
-          const orgName = await getOrganizerName(event.id);
-          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
+          const branding = await getOrganizerBranding(event.id);
+          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
         } catch (err) {
           console.error('Failed to send tickets email after approval:', err);
         }
@@ -679,8 +679,8 @@ export async function registerRoutes(
       const tickets = await storage.getTicketsByBooking(booking.id);
       // Send email (AWAIT for serverless/vercel compatibility)
       try {
-        const orgName = await getOrganizerName(event.id);
-        await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
+        const branding = await getOrganizerBranding(event.id);
+        await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
       } catch (err) {
         console.error('Failed to send tickets email after manual creation:', err);
       }
@@ -721,8 +721,8 @@ export async function registerRoutes(
       }
 
       // Send email
-      const orgName = await getOrganizerName(event.id);
-      await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
+      const branding = await getOrganizerBranding(event.id);
+      await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
 
       // Log the resend action (non-fatal if it fails)
       try {
@@ -894,7 +894,21 @@ export async function registerRoutes(
       return res.status(404).json({ message: "Event not found" });
     }
     const org = await storage.getOrganizerById(event.organizerId);
-    res.status(200).json({ ...event, organizerName: org?.name || "TixPass" });
+    res.status(200).json({ ...event, organizerName: org?.brandName || org?.name || "TixPass", organizerLogo: org?.logoUrl || undefined });
+  });
+
+  // Organizer profile (returns branding + report settings)
+  app.get("/api/organizer/profile", authenticateToken, requireOrganizer, async (req: any, res) => {
+    const org = await storage.getOrganizerByUserId(req.user.id);
+    if (!org) return res.status(404).json({ message: "Organizer not found" });
+    res.status(200).json({
+      name: org.name,
+      brandName: org.brandName || "",
+      logoUrl: org.logoUrl || "",
+      reportEmail: org.reportEmail || "",
+      reportTime: org.reportTime || "02:00",
+      reportEnabled: org.reportEnabled ?? true,
+    });
   });
 
   app.post(api.organizer.account.setReportEmail.path, authenticateToken, requireOrganizer, async (req: any, res) => {
@@ -914,6 +928,23 @@ export async function registerRoutes(
       res.status(200).json({ message: "Report email updated" });
     } catch (err) {
       res.status(400).json({ message: "Invalid input" });
+    }
+  });
+
+  // Organizer branding (name + logo for emails/tickets)
+  app.post("/api/organizer/branding", authenticateToken, requireOrganizer, async (req: any, res) => {
+    try {
+      const org = await storage.getOrganizerByUserId(req.user.id);
+      if (!org) return res.status(404).json({ message: "Organizer not found" });
+      const { brandName, logoUrl } = req.body;
+      await db.update(organizers).set({
+        brandName: brandName ?? org.brandName,
+        logoUrl: logoUrl ?? org.logoUrl,
+        updatedAt: new Date(),
+      }).where(eq(organizers.id, org.id));
+      res.status(200).json({ message: "Branding updated" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to update branding" });
     }
   });
 
@@ -1099,8 +1130,8 @@ export async function registerRoutes(
       if (event) {
         try {
           console.log(`[PayPal] Sending confirmation email to ${booking.customerEmail}`);
-          const orgName = await getOrganizerName(event.id);
-          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, orgName);
+          const branding = await getOrganizerBranding(event.id);
+          await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
           console.log(`[PayPal] Email sent successfully`);
         } catch (err) {
           console.error('[PayPal] Failed to send tickets email:', err);
@@ -1129,7 +1160,7 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Ticket not found" });
       }
       const org = await storage.getOrganizerById(ticketData.event.organizerId);
-      res.status(200).json({ ...ticketData, organizerName: org?.name || "TixPass" });
+      res.status(200).json({ ...ticketData, organizerName: org?.brandName || org?.name || "TixPass", organizerLogo: org?.logoUrl || undefined });
     } catch (err) {
       console.error('Error fetching public ticket:', err);
       res.status(400).json({ message: "Invalid ticket ID" });

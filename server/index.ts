@@ -36,6 +36,8 @@ export async function initialize() {
           `ALTER TABLE events ADD COLUMN IF NOT EXISTS language text`,
           `ALTER TABLE events ADD COLUMN IF NOT EXISTS screen text`,
           `ALTER TABLE events ADD COLUMN IF NOT EXISTS notes text`,
+          `ALTER TABLE organizers ADD COLUMN IF NOT EXISTS brand_name text`,
+          `ALTER TABLE organizers ADD COLUMN IF NOT EXISTS logo_url text`,
         ];
         for (const sql of migrations) {
           await pool.query(sql);

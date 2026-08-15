@@ -3,6 +3,13 @@ import { fetchWithAuth } from "@/lib/fetch";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+export function useOrganizerProfile() {
+  return useQuery({
+    queryKey: ["/api/organizer/profile"],
+    queryFn: () => fetchWithAuth("/api/organizer/profile"),
+  });
+}
+
 export function useEvents() {
   const path = api?.organizer?.events?.list?.path || "/api/organizer/events";
   return useQuery({
@@ -319,6 +326,31 @@ export function useUpdateReportSettings() {
         throw new Error(text || "Failed to update report settings");
       }
       return res.json();
+    },
+  });
+}
+
+export function useUpdateBranding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { brandName?: string; logoUrl?: string }) => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/organizer/branding", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to update branding");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/organizer/branding"] });
     },
   });
 }
