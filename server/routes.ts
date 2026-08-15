@@ -23,7 +23,9 @@ export async function registerRoutes(
     const event = await storage.getEvent(eventId);
     if (!event) return { name: "TixPass" };
     const org = await storage.getOrganizerById(event.organizerId);
-    return { name: org?.brandName || org?.name || "TixPass", logoUrl: org?.logoUrl || undefined };
+    const name = org?.brandName || org?.name || "TixPass";
+    const logoUrl = org?.logoUrl ? `/api/organizer/${org.id}/logo` : undefined;
+    return { name, logoUrl };
   }
   async function syncWithRetry(eventId: string, retries = 2) {
     let attempt = 0;
@@ -945,6 +947,28 @@ export async function registerRoutes(
       res.status(200).json({ message: "Branding updated" });
     } catch (err) {
       res.status(500).json({ message: "Failed to update branding" });
+    }
+  });
+
+  // Public endpoint to serve organizer logo as a real image (not base64)
+  app.get("/api/organizer/:organizerId/logo", async (req, res) => {
+    try {
+      const org = await storage.getOrganizerById(req.params.organizerId);
+      if (!org || !org.logoUrl) return res.status(404).json({ message: "Logo not found" });
+
+      if (org.logoUrl.startsWith("data:")) {
+        const match = org.logoUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (!match) return res.status(400).json({ message: "Invalid logo data" });
+        const ext = match[1] === "jpeg" ? "jpg" : match[1];
+        const buf = Buffer.from(match[2], "base64");
+        res.setHeader("Content-Type", `image/${ext}`);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        return res.send(buf);
+      }
+
+      res.redirect(org.logoUrl);
+    } catch {
+      res.status(500).json({ message: "Failed to serve logo" });
     }
   });
 
