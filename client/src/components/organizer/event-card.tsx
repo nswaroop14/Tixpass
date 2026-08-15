@@ -47,12 +47,12 @@ export function EventCard({
   return (
     <div className={`bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col ${isPast ? "opacity-70" : ""}`}>
       {/* Poster */}
-      <div className="aspect-[16/9] bg-gray-100 relative overflow-hidden">
+      <div className="aspect-[16/9] bg-gray-50 relative overflow-hidden">
         {event.bannerUrl ? (
           <img
             src={event.bannerUrl}
             alt={event.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
