@@ -100,7 +100,7 @@ export default function OrganizerEvents() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.description || !formData.venue || !formData.eventDate || !formData.ticketTypes) {
+    if (!formData.title || !formData.venue || !formData.eventDate || !formData.ticketTypes) {
       toast({ title: "Missing fields", description: "Please fill all required fields.", variant: "destructive" });
       return;
     }
@@ -245,8 +245,8 @@ export default function OrganizerEvents() {
                       <Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="h-9" placeholder="e.g. Dhurandhar 2: The Revenge" />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Description *</Label>
-                      <Textarea required rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="text-sm" />
+                      <Label className="text-sm">Description</Label>
+                      <Textarea rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="text-sm" />
                     </div>
                     {/* Image Upload */}
                     <div className="space-y-1.5">
@@ -259,17 +259,27 @@ export default function OrganizerEvents() {
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          if (file.size > 5 * 1024 * 1024) {
-                            toast({ title: "Image too large", description: "Please use an image under 5MB. Recommended: 1200×675px (16:9).", variant: "destructive" });
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({ title: "Image too large", description: "Please use an image under 10MB.", variant: "destructive" });
                             return;
                           }
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            const base64 = ev.target?.result as string;
-                            setFormData({ ...formData, bannerUrl: base64 });
-                            setImagePreview(base64);
+                          const img = new window.Image();
+                          img.onload = () => {
+                            const MAX_W = 1200;
+                            const MAX_H = 675;
+                            let w = img.width;
+                            let h = img.height;
+                            if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+                            if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+                            const canvas = document.createElement("canvas");
+                            canvas.width = w;
+                            canvas.height = h;
+                            canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+                            const resized = canvas.toDataURL("image/jpeg", 0.8);
+                            setFormData({ ...formData, bannerUrl: resized });
+                            setImagePreview(resized);
                           };
-                          reader.readAsDataURL(file);
+                          img.src = URL.createObjectURL(file);
                         }}
                       />
                       {imagePreview ? (

@@ -69,7 +69,7 @@ export const events = pgTable("events", {
   id: uuid("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
   organizerId: uuid("organizer_id").references(() => organizers.id).notNull(),
   title: text("title").notNull(),
-  description: text("description").notNull(),
+  description: text("description").default(""),
   bannerUrl: text("banner_url"),
   language: text("language"),
   screen: text("screen"),
