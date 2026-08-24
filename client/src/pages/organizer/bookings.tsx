@@ -69,6 +69,16 @@ export default function OrganizerBookings() {
     return () => clearTimeout(timeout);
   }, [selectedEventId, selectedStatus, saveFilterPreferences, isProfileLoading]);
 
+  // Auto-select event when dialog opens and only one active event exists
+  useEffect(() => {
+    if (isOpen) {
+      const activeEvents = events?.filter((e: any) => e.status === "active" && e.remainingCapacity > 0) || [];
+      if (activeEvents.length === 1) {
+        setFormData(prev => ({ ...prev, eventId: activeEvents[0].id }));
+      }
+    }
+  }, [isOpen, events]);
+
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
     let result = bookings;
