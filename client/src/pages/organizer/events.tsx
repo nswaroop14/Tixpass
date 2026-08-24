@@ -25,7 +25,7 @@ export default function OrganizerEvents() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [activeTab, setActiveTab] = useState<FilterTab>("active");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [formData, setFormData] = useState({
@@ -45,11 +45,11 @@ export default function OrganizerEvents() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const tabs: { key: FilterTab; label: string }[] = [
-    { key: "all", label: "All Events" },
     { key: "active", label: "Active" },
     { key: "paused", label: "Paused" },
     { key: "draft", label: "Draft" },
     { key: "past", label: "Past" },
+    { key: "all", label: "All Events" },
   ];
 
   const tabCounts = useMemo(() => {
