@@ -273,7 +273,7 @@ export default function OrganizerBookings() {
                       <SelectValue placeholder="Select an event" />
                     </SelectTrigger>
                     <SelectContent>
-                      {events?.map((event: any) => (
+                      {events?.filter((event: any) => event.status === "active").map((event: any) => (
                         <SelectItem key={event.id} value={event.id} disabled={event.remainingCapacity <= 0}>
                           {event.title} ({event.remainingCapacity} left)
                         </SelectItem>
