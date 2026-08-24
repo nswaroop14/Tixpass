@@ -6,8 +6,8 @@ import { createServer } from "http";
 
 export const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 
 // Logging middleware
 app.use((req, res, next) => {
