@@ -24,6 +24,7 @@ export const organizers = pgTable("organizers", {
   reportEnabled: boolean("report_enabled").default(true),
   lastReportSentAt: timestamp("last_report_sent_at"),
   bankLocked: boolean("bank_locked").default(false),
+  bookingFilterPreferences: text("booking_filter_preferences"), // JSON string for saved filters
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   deletedAt: timestamp("deleted_at"),

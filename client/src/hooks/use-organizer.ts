@@ -10,6 +10,20 @@ export function useOrganizerProfile() {
   });
 }
 
+export function useSaveBookingFilterPreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { eventId?: string; status?: string }) =>
+      fetchWithAuth("/api/organizer/booking-filter-preferences", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/organizer/profile"] });
+    },
+  });
+}
+
 export function useEvents() {
   const path = api?.organizer?.events?.list?.path || "/api/organizer/events";
   return useQuery({

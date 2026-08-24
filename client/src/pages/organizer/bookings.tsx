@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import {
   useBookings,
@@ -8,6 +8,8 @@ import {
   useUpdateBooking,
   useDeleteBooking,
   useResendTickets,
+  useOrganizerProfile,
+  useSaveBookingFilterPreferences,
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -24,11 +26,13 @@ import { EmptyState } from "@/components/organizer/empty-state";
 export default function OrganizerBookings() {
   const { data: bookings, isLoading: isBookingsLoading } = useBookings();
   const { data: events, isLoading: isEventsLoading } = useEvents();
+  const { data: profile, isLoading: isProfileLoading } = useOrganizerProfile();
   const approve = useApproveBooking();
   const manualCreate = useManualCreateBooking();
   const updateBooking = useUpdateBooking();
   const deleteBooking = useDeleteBooking();
   const resendTickets = useResendTickets();
+  const saveFilterPreferences = useSaveBookingFilterPreferences();
   const { toast } = useToast();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -46,6 +50,24 @@ export default function OrganizerBookings() {
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
   const [isResendConfirmOpen, setIsResendConfirmOpen] = useState(false);
   const [bookingToResend, setBookingToResend] = useState<any | null>(null);
+
+  // Load saved filter preferences from profile
+  useEffect(() => {
+    if (profile?.bookingFilterPreferences) {
+      const { eventId, status } = profile.bookingFilterPreferences;
+      if (eventId) setSelectedEventId(eventId);
+      if (status) setSelectedStatus(status);
+    }
+  }, [profile]);
+
+  // Save filter preferences when they change (debounced)
+  useEffect(() => {
+    if (isProfileLoading) return;
+    const timeout = setTimeout(() => {
+      saveFilterPreferences.mutate({ eventId: selectedEventId, status: selectedStatus });
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [selectedEventId, selectedStatus, saveFilterPreferences, isProfileLoading]);
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];

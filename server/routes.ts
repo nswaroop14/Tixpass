@@ -908,7 +908,25 @@ export async function registerRoutes(
       reportEmail: org.reportEmail || "",
       reportTime: org.reportTime || "02:00",
       reportEnabled: org.reportEnabled ?? true,
+      bookingFilterPreferences: org.bookingFilterPreferences ? JSON.parse(org.bookingFilterPreferences) : null,
     });
+  });
+
+  // Save booking filter preferences
+  app.post("/api/organizer/booking-filter-preferences", authenticateToken, requireOrganizer, async (req: any, res) => {
+    try {
+      const { eventId, status } = req.body;
+      const org = await storage.getOrganizerByUserId(req.user.id);
+      if (!org) return res.status(404).json({ message: "Organizer not found" });
+      const preferences = { eventId: eventId || "", status: status || "" };
+      await db.update(organizers).set({
+        bookingFilterPreferences: JSON.stringify(preferences),
+        updatedAt: new Date(),
+      }).where(eq(organizers.id, org.id));
+      res.status(200).json({ message: "Filter preferences saved", preferences });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to save filter preferences" });
+    }
   });
 
   app.post(api.organizer.account.setReportEmail.path, authenticateToken, requireOrganizer, async (req: any, res) => {
