@@ -43,9 +43,10 @@ export function EventCard({
   const sold = event.totalCapacity - event.remainingCapacity;
   const pct = event.totalCapacity > 0 ? Math.round((sold / event.totalCapacity) * 100) : 0;
   const isPast = new Date(event.eventDate) < new Date();
+  const isDimmed = isPast && event.status === "paused";
 
   return (
-    <div className={`bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col ${isPast ? "opacity-70" : ""}`}>
+    <div className={`bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col ${isDimmed ? "opacity-70" : ""}`}>
       {/* Poster */}
       <div className="aspect-[16/9] bg-gray-50 relative overflow-hidden">
         {event.bannerUrl ? (
