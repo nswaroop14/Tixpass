@@ -216,11 +216,11 @@ export default function OrganizerBookings() {
         title="Bookings"
         subtitle="Review customer orders and verify payments."
       >
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
             <Filter className="w-4 h-4 text-gray-400 shrink-0" />
             <Select value={selectedEventId || "all"} onValueChange={(v) => setSelectedEventId(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[180px] h-9 bg-white border-gray-200 text-sm">
+              <SelectTrigger className="w-full sm:w-[180px] h-9 bg-white border-gray-200 text-sm">
                 <SelectValue placeholder="All Events" />
               </SelectTrigger>
               <SelectContent>
@@ -233,7 +233,7 @@ export default function OrganizerBookings() {
               </SelectContent>
             </Select>
             <Select value={selectedStatus || "all"} onValueChange={(v) => setSelectedStatus(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[150px] h-9 bg-white border-gray-200 text-sm">
+              <SelectTrigger className="w-full sm:w-[150px] h-9 bg-white border-gray-200 text-sm">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -246,17 +246,18 @@ export default function OrganizerBookings() {
             </Select>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadCsv}
-            className="h-9 border-gray-200 text-gray-600 hover:bg-gray-50 gap-2 text-sm"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export CSV</span>
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadCsv}
+              className="h-9 border-gray-200 text-gray-600 hover:bg-gray-50 gap-2 text-sm w-full sm:w-auto"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
 
-          <Dialog
+            <Dialog
             open={isOpen}
             onOpenChange={(open) => {
               setIsOpen(open);
@@ -271,7 +272,7 @@ export default function OrganizerBookings() {
                 Manual Ticket
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+<DialogContent className="sm:max-w-[425px] max-w-[calc(100%-1rem)] sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle className="text-lg font-semibold">Create Manual Ticket</DialogTitle>
               </DialogHeader>
@@ -313,6 +314,7 @@ export default function OrganizerBookings() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </PageHeader>
 
@@ -340,8 +342,91 @@ export default function OrganizerBookings() {
               description={selectedEventId ? "No bookings have been made yet for this event." : "When customers book tickets, their orders will appear here."}
             />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
+          <>
+            {/* Mobile Card View */}
+            <div className="lg:hidden">
+              {filteredBookings.map((row: any) => (
+                <div key={row.booking.id} className="border-b border-gray-100 p-4 last:border-0 bg-white">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0 ${getAvatarColor(row.booking.customerName)}`}>
+                      {getInitials(row.booking.customerName)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-gray-900 truncate text-sm">{row.booking.customerName}</p>
+                        <StatusBadge status={row.booking.status} />
+                      </div>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{row.booking.customerEmail}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{row.event.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{format(new Date(row.event.eventDate), "MMM d, yyyy")}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Ticket className="w-3.5 h-3.5" />
+                      Qty: {row.booking.ticketQuantity}
+                    </span>
+                    <span className="font-semibold text-gray-900">
+                      €{((row.event.ticketPrice * row.booking.ticketQuantity) / 100).toFixed(2)}
+                    </span>
+                    {row.booking.status === "paid" && (
+                      <span className="inline-flex items-center gap-1 text-emerald-600 text-xs">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Sent
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {row.booking.status === "payment_submitted" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 gap-1"
+                        onClick={() => approve.mutate(row.booking.id)}
+                        disabled={approve.isPending}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Approve
+                      </Button>
+                    )}
+                    {row.booking.status === "paid" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 gap-1"
+                        onClick={() => openResendConfirm(row)}
+                        disabled={resendTickets.isPending}
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        Resend
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100 gap-1"
+                      onClick={() => openEditDialog(row)}
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-gray-400 hover:text-red-600 hover:bg-red-50 gap-1"
+                      onClick={() => handleDeleteBooking(row)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
               <colgroup>
                 <col style={{ width: "22%" }} />
                 <col style={{ width: "20%" }} />
@@ -448,12 +533,13 @@ export default function OrganizerBookings() {
               </tbody>
             </table>
           </div>
+        </>
         )}
       </div>
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">Edit Booking</DialogTitle>
           </DialogHeader>
@@ -513,7 +599,7 @@ export default function OrganizerBookings() {
 
       {/* Resend Dialog */}
       <Dialog open={isResendConfirmOpen} onOpenChange={setIsResendConfirmOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">Resend Tickets</DialogTitle>
             <DialogDescription className="text-sm text-gray-500">
