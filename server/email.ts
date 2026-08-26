@@ -140,6 +140,12 @@ const formatEventDateParts = (date: Date) => {
   return { dateStr, timeStr };
 };
 
+function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | null {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  return { mimeType: match[1], buffer: Buffer.from(match[2], 'base64') };
+}
+
 export async function sendTicketsEmail(
   customerEmail: string,
   customerName: string,
@@ -165,9 +171,29 @@ export async function sendTicketsEmail(
 
   const ticketCode = tickets.length > 0 ? tickets[0].uniqueTicketCode : "";
 
-  const ticketLinks = tickets.map(t =>
-    `${APP_URL}/ticket/${t.id}`
-  ).join('\n');
+  // Handle poster image - convert base64 to CID attachment or use external URL
+  const attachments: any[] = [];
+  let posterHtml = '';
+  const bannerUrl = event.bannerUrl || '';
+
+  if (bannerUrl.startsWith('data:')) {
+    const parsed = parseDataUrl(bannerUrl);
+    if (parsed) {
+      attachments.push({
+        filename: 'poster.jpg',
+        content: parsed.buffer,
+        contentType: parsed.mimeType,
+        cid: 'event-poster'
+      });
+      posterHtml = `<img src="cid:event-poster" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
+    }
+  } else if (bannerUrl.startsWith('http')) {
+    posterHtml = `<img src="${bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
+  }
+
+  if (!posterHtml) {
+    posterHtml = `<div style="width:100%;height:180px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;font-weight:800;color:rgba(255,255,255,0.15);letter-spacing:8px;">TIXPASS</span></div>`;
+  }
 
   const mailOptions = {
     from: process.env.SMTP_FROM || '"TixPass" <no-reply@tixpass.com>',
@@ -199,10 +225,7 @@ export async function sendTicketsEmail(
 
           <!-- POSTER -->
           <tr><td style="padding:0;">
-            ${event.bannerUrl
-              ? `<img src="${event.bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`
-              : `<div style="width:100%;height:200px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;font-weight:800;color:rgba(255,255,255,0.15);letter-spacing:8px;">TIXPASS</span></div>`
-            }
+            ${posterHtml}
           </td></tr>
 
           <!-- EVENT INFO -->
@@ -321,11 +344,6 @@ export async function sendTicketsEmail(
       </td></tr>
       ` : ''}
 
-      <!-- VIEW TICKET LINK -->
-      <tr><td style="padding:16px 0 0 0;text-align:center;">
-        <a href="${APP_URL}/ticket/${tickets.length > 0 ? tickets[0].id : ''}" style="display:inline-block;background:#6d28d9;color:#ffffff;font-size:14px;font-weight:600;padding:12px 32px;border-radius:10px;text-decoration:none;">View Ticket Online</a>
-      </td></tr>
-
       <!-- FOOTER -->
       <tr><td style="padding:28px 0 0 0;text-align:center;">
         <div style="font-size:22px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">T<span style="color:#6d28d9;">ix</span>Pass</div>
@@ -371,12 +389,10 @@ export async function sendTicketsEmail(
       event.notes ? `Important Information:` : '',
       event.notes ? event.notes : '',
       ``,
-      `View your ticket online:`,
-      ticketLinks,
-      ``,
       `Your ticket. Your experience.`,
       `© ${new Date().getFullYear()} TixPass`
     ].filter(Boolean).join("\n"),
+    attachments,
   };
 
   try {
