@@ -123,6 +123,23 @@ const formatEventDate = (date: Date, text?: string | null) => {
   }).format(date).replace(',', '').replace(/ (AM|PM)/, ' $1').replace(/(\d{4}) /, '$1 • ');
 };
 
+const formatEventDateParts = (date: Date) => {
+  const dateStr = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+  const timeStr = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+  return { dateStr, timeStr };
+};
+
 export async function sendTicketsEmail(
   customerEmail: string,
   customerName: string,
@@ -130,7 +147,7 @@ export async function sendTicketsEmail(
   tickets: Ticket[],
   organizerName?: string
 ) {
-  const brandName = organizerName || "TixPass";
+  const brandName = "TixPass";
   console.log(`📧 Attempting to send tickets email to ${customerEmail} using ${process.env.SMTP_USER}...`);
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn('⚠️ SMTP not configured. Skipping ticket email to:', customerEmail);
@@ -142,109 +159,223 @@ export async function sendTicketsEmail(
   const ticketCount = tickets.length;
   const ticketPrice = event.ticketPrice / 100;
   const totalPrice = ticketPrice * ticketCount;
+  const { dateStr, timeStr } = formatEventDateParts(new Date(event.eventDate));
 
-  const ticketStubs = tickets.map((t, idx) => `
-    <tr><td style="padding:0 0 16px 0;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-        <tr><td style="padding:20px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-            <tr>
-              <td width="90" valign="top">
-                ${event.bannerUrl ? `<img src="${event.bannerUrl}" alt="${event.title}" width="80" height="100" style="display:block;border-radius:8px;object-fit:cover;" />` : `<div style="width:80px;height:100px;background:#e4e4e7;border-radius:8px;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;color:#71717a;">No Image</span></div>`}
-              </td>
-              <td style="padding-left:16px;" valign="top">
-                <div style="font-size:16px;font-weight:700;color:#18181b;line-height:1.3;margin-bottom:4px;">${event.title}</div>
-                ${event.language ? `<div style="font-size:12px;color:#71717a;margin-bottom:2px;">${event.language}${event.screen ? `, ${event.screen}` : ''}</div>` : ''}
-                <div style="font-size:12px;color:#71717a;margin-bottom:2px;">${formatEventDate(new Date(event.eventDate), event.eventDateText)}</div>
-                <div style="font-size:12px;color:#71717a;">${event.venue}</div>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-        <tr><td style="padding:0 20px 20px 20px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f4f4f5;border-radius:12px;padding:16px;">
-            <tr><td style="text-align:center;padding:8px 0;">
-              <div style="font-size:12px;color:#71717a;margin-bottom:4px;">${ticketCount} Ticket(s)</div>
-              ${event.screen ? `<div style="font-size:14px;font-weight:600;color:#18181b;margin-bottom:2px;">${event.screen}</div>` : ''}
-              <div style="font-size:12px;color:#71717a;">${event.ticketTypes}</div>
-            </td></tr>
-            <tr><td style="text-align:center;padding:16px 0;">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(t.uniqueTicketCode)}" alt="QR Code" width="140" height="140" style="display:block;margin:0 auto;width:140px;height:140px;" />
-            </td></tr>
-            <tr><td style="text-align:center;padding:0 0 8px 0;">
-              <div style="font-size:13px;font-weight:700;color:#18181b;letter-spacing:1px;">BOOKING ID: ${t.uniqueTicketCode}</div>
-            </td></tr>
-          </table>
-        </td></tr>
-        <tr><td style="padding:0 20px 20px 20px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;">
-            <tr><td style="padding:10px 12px;font-size:11px;color:#854d0e;text-align:center;">
-              Cancellation unavailable: cut-off time of 20 minutes before showtime has passed
-            </td></tr>
-          </table>
-        </td></tr>
-        <tr><td style="border-top:1px solid #e5e7eb;padding:16px 20px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size:13px;color:#52525b;">
-            <tr><td style="padding:4px 0;font-weight:600;color:#18181b;">Total Amount</td><td style="text-align:right;padding:4px 0;font-weight:700;color:#18181b;">€${totalPrice.toFixed(2)}</td></tr>
-            <tr><td style="padding:4px 0;">Ticket(s) price (${ticketCount})</td><td style="text-align:right;padding:4px 0;">€${ticketPrice.toFixed(2)}</td></tr>
-            <tr><td style="padding:4px 0;">Convenience fee</td><td style="text-align:right;padding:4px 0;">€0.00</td></tr>
-            <tr><td style="padding:4px 0;">Discount</td><td style="text-align:right;padding:4px 0;">- €0.00</td></tr>
-          </table>
-        </td></tr>
-      </table>
-    </td></tr>
-  `).join('');
+  const customerGreeting = customerName ? `Hi ${customerName},` : "Hi there,";
+
+  const ticketCode = tickets.length > 0 ? tickets[0].uniqueTicketCode : "";
 
   const ticketLinks = tickets.map(t =>
-    `- ${t.uniqueTicketCode}: ${APP_URL}/ticket/${t.id}`
+    `${APP_URL}/ticket/${t.id}`
   ).join('\n');
 
   const mailOptions = {
     from: process.env.SMTP_FROM || '"TixPass" <no-reply@tixpass.com>',
     to: customerEmail,
-    subject: `Your Tickets for ${event.title}`,
+    subject: `Your TixPass Ticket — ${event.title}`,
     html: `
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-family:Arial,Helvetica,sans-serif;background:#f4f4f5;">
-        <tr><td align="center" style="padding:24px 12px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:480px;">
-            <tr><td style="background:#18181b;border-radius:16px 16px 0 0;padding:24px 20px;text-align:center;">
-              <div style="font-size:24px;font-weight:700;color:#fff;margin-bottom:4px;">${brandName}</div>
-              <div style="font-size:12px;color:#a1a1aa;">Your Ticket</div>
-            </td></tr>
-            <tr><td style="background:#fff;padding:24px 20px;border-radius:0 0 16px 16px;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                ${ticketStubs}
-              </table>
-            </td></tr>
-            <tr><td style="padding:16px 0;text-align:center;">
-              <span style="font-size:11px;color:#a1a1aa;">Powered by TixPass</span>
-            </td></tr>
-          </table>
-        </td></tr>
-      </table>
-    `,
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f0f0f3;font-family:Arial,Helvetica,sans-serif;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f0f0f3;">
+  <tr><td align="center" style="padding:24px 12px 40px 12px;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:520px;">
+
+      <!-- HEADER -->
+      <tr><td style="padding:0 0 20px 0;text-align:center;">
+        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">T<span style="color:#6d28d9;">ix</span>Pass</div>
+      </td></tr>
+
+      <!-- CONFIRMATION BANNER -->
+      <tr><td style="padding:0 0 16px 0;text-align:center;">
+        <div style="font-size:13px;font-weight:600;color:#16a34a;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">&#10003; Booking Confirmed</div>
+        <div style="font-size:14px;color:#52525b;">${customerGreeting}</div>
+      </td></tr>
+
+      <!-- TICKET CARD -->
+      <tr><td>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+          <!-- POSTER -->
+          <tr><td style="padding:0;">
+            ${event.bannerUrl
+              ? `<img src="${event.bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`
+              : `<div style="width:100%;height:200px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;font-weight:800;color:rgba(255,255,255,0.15);letter-spacing:8px;">TIXPASS</span></div>`
+            }
+          </td></tr>
+
+          <!-- EVENT INFO -->
+          <tr><td style="padding:24px 28px 0 28px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:6px;">${event.title}</div>
+            <div style="font-size:13px;color:#71717a;font-weight:500;letter-spacing:0.3px;">${event.ticketTypes}</div>
+          </td></tr>
+
+          <!-- SHOW INFO GRID -->
+          <tr><td style="padding:20px 28px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:12px;">
+              <tr>
+                <td width="33%" style="padding:16px 8px;text-align:center;border-right:1px solid #e5e7eb;">
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">DATE</div>
+                  <div style="font-size:13px;font-weight:600;color:#18181b;line-height:1.4;">${dateStr}</div>
+                </td>
+                <td width="33%" style="padding:16px 8px;text-align:center;border-right:1px solid #e5e7eb;">
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">TIME</div>
+                  <div style="font-size:13px;font-weight:600;color:#18181b;line-height:1.4;">${timeStr}</div>
+                </td>
+                <td width="34%" style="padding:16px 8px;text-align:center;">
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">VENUE</div>
+                  <div style="font-size:12px;font-weight:600;color:#18181b;line-height:1.4;">${event.venue}</div>
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+
+          <!-- SCREEN / LANGUAGE -->
+          ${event.screen || event.language ? `
+          <tr><td style="padding:0 28px 16px 28px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <tr>
+                ${event.screen ? `<td style="padding:4px 8px 4px 0;"><span style="display:inline-block;background:#ede9fe;color:#6d28d9;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">Screen: ${event.screen}</span></td>` : ''}
+                ${event.language ? `<td style="padding:4px 0;"><span style="display:inline-block;background:#f0f0f3;color:#52525b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">${event.language}</span></td>` : ''}
+              </tr>
+            </table>
+          </td></tr>
+          ` : ''}
+
+          <!-- PERFORATION DIVIDER -->
+          <tr><td style="padding:0 20px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <tr>
+                <td style="border-top:2px dashed #d4d4d8;"></td>
+                <td style="width:24px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:6px;">&#9679; &#9679; &#9679;</td>
+                <td style="border-top:2px dashed #d4d4d8;"></td>
+              </tr>
+            </table>
+          </td></tr>
+
+          <!-- TICKET COUNT -->
+          <tr><td style="padding:20px 28px 0 28px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Tickets</div>
+            <div style="font-size:16px;font-weight:700;color:#18181b;">${ticketCount} ${ticketCount === 1 ? 'Ticket' : 'Tickets'}</div>
+            <div style="font-size:13px;color:#71717a;margin-top:2px;">${event.ticketTypes}</div>
+          </td></tr>
+
+          <!-- QR CODE -->
+          <tr><td style="padding:24px 28px;text-align:center;">
+            <div style="display:inline-block;background:#ffffff;border:2px solid #e5e7eb;border-radius:16px;padding:20px;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketCode)}" alt="QR Code" width="180" height="180" style="display:block;width:180px;height:180px;" />
+            </div>
+            <div style="margin-top:12px;font-size:11px;color:#71717a;letter-spacing:0.3px;">Scan this QR code at the entrance</div>
+          </td></tr>
+
+          <!-- BOOKING ID -->
+          <tr><td style="padding:0 28px 24px 28px;text-align:center;">
+            <div style="display:inline-block;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 20px;">
+              <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:2px;">Booking ID</div>
+              <div style="font-size:18px;font-weight:800;color:#18181b;letter-spacing:2px;font-family:'Courier New',monospace;">${ticketCode}</div>
+            </div>
+          </td></tr>
+
+          <!-- PERFORATION DIVIDER -->
+          <tr><td style="padding:0 20px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <tr>
+                <td style="border-top:2px dashed #d4d4d8;"></td>
+                <td style="width:24px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:6px;">&#9679; &#9679; &#9679;</td>
+                <td style="border-top:2px dashed #d4d4d8;"></td>
+              </tr>
+            </table>
+          </td></tr>
+
+          <!-- PRICE BREAKDOWN -->
+          <tr><td style="padding:20px 28px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              <tr><td style="padding:4px 0;font-size:13px;color:#52525b;">Ticket(s) (${ticketCount} × €${ticketPrice.toFixed(2)})</td><td style="text-align:right;padding:4px 0;font-size:13px;color:#52525b;">€${totalPrice.toFixed(2)}</td></tr>
+              <tr><td style="padding:4px 0;font-size:13px;color:#52525b;">Convenience Fee</td><td style="text-align:right;padding:4px 0;font-size:13px;color:#52525b;">€0.00</td></tr>
+              <tr><td style="padding:4px 0;font-size:13px;color:#52525b;">Discount</td><td style="text-align:right;padding:4px 0;font-size:13px;color:#52525b;">- €0.00</td></tr>
+              <tr><td colspan="2" style="padding:8px 0;"><div style="border-top:1px solid #e5e7eb;"></div></td></tr>
+              <tr><td style="padding:4px 0;font-size:14px;font-weight:700;color:#18181b;">Total Amount</td><td style="text-align:right;padding:4px 0;font-size:16px;font-weight:800;color:#6d28d9;">€${totalPrice.toFixed(2)}</td></tr>
+            </table>
+          </td></tr>
+
+          <!-- PAID BADGE -->
+          <tr><td style="padding:0 28px 24px 28px;text-align:center;">
+            <div style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;padding:6px 16px;">
+              <span style="font-size:12px;font-weight:700;color:#16a34a;">&#10003; PAID</span>
+            </div>
+          </td></tr>
+
+        </table>
+      </td></tr>
+
+      <!-- IMPORTANT INFORMATION -->
+      ${event.notes ? `
+      <tr><td style="padding:16px 0 0 0;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <tr><td style="padding:20px 24px;">
+            <div style="font-size:12px;font-weight:700;color:#18181b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Important Information</div>
+            <div style="font-size:13px;color:#52525b;line-height:1.6;">${event.notes}</div>
+          </td></tr>
+        </table>
+      </td></tr>
+      ` : ''}
+
+      <!-- VIEW TICKET LINK -->
+      <tr><td style="padding:16px 0 0 0;text-align:center;">
+        <a href="${APP_URL}/ticket/${tickets.length > 0 ? tickets[0].id : ''}" style="display:inline-block;background:#6d28d9;color:#ffffff;font-size:14px;font-weight:600;padding:12px 32px;border-radius:10px;text-decoration:none;">View Ticket Online</a>
+      </td></tr>
+
+      <!-- FOOTER -->
+      <tr><td style="padding:28px 0 0 0;text-align:center;">
+        <div style="font-size:22px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">T<span style="color:#6d28d9;">ix</span>Pass</div>
+        <div style="font-size:12px;color:#a1a1aa;margin-top:4px;font-style:italic;">Your ticket. Your experience.</div>
+        <div style="font-size:11px;color:#d4d4d8;margin-top:12px;">&copy; ${new Date().getFullYear()} TixPass. All rights reserved.</div>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`,
     text: [
-      `Hi ${customerName},`,
+      `TIXPASS`,
       ``,
-      `Your payment for ${tickets.length} ticket(s) to ${event.title} has been confirmed!`,
+      `Booking Confirmed`,
+      ``,
+      `Hi ${customerName || "there"},`,
+      `Your booking for ${ticketCount} ticket(s) to ${event.title} has been confirmed!`,
       ``,
       `EVENT DETAILS`,
-      `Date: ${formatEventDate(new Date(event.eventDate), event.eventDateText)}`,
+      `Date: ${dateStr}`,
+      `Time: ${timeStr}`,
       `Venue: ${event.venue}`,
       event.screen ? `Screen: ${event.screen}` : '',
       event.language ? `Language: ${event.language}` : '',
       `Type: ${event.ticketTypes}`,
-      event.notes ? `\nNote: ${event.notes}` : '',
       ``,
-      `TICKETS`,
-      ...tickets.map(t => `Code: ${t.uniqueTicketCode}`),
+      `TICKET`,
+      `${ticketCount} × ${event.ticketTypes}`,
       ``,
-      `View your tickets online:`,
+      `QR CODE`,
+      `Scan this QR code at the entrance.`,
+      `Booking ID: ${ticketCode}`,
+      ``,
+      `PRICE BREAKDOWN`,
+      `Ticket(s): €${totalPrice.toFixed(2)}`,
+      `Convenience Fee: €0.00`,
+      `Discount: - €0.00`,
+      `Total: €${totalPrice.toFixed(2)}`,
+      `Status: PAID`,
+      event.notes ? `` : '',
+      event.notes ? `Important Information:` : '',
+      event.notes ? event.notes : '',
+      ``,
+      `View your ticket online:`,
       ticketLinks,
       ``,
-      `Show the QR code at the entrance for scanning.`,
-      ``,
-      `If you have any questions, contact the event organizer.`
+      `Your ticket. Your experience.`,
+      `© ${new Date().getFullYear()} TixPass`
     ].filter(Boolean).join("\n"),
   };
 
