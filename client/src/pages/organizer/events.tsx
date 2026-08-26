@@ -57,8 +57,14 @@ export default function OrganizerEvents() {
     const now = new Date();
     const counts: Record<string, number> = { all: events.length };
     events.forEach((e: any) => {
-      if (new Date(e.eventDate) < now) {
-        counts["past"] = (counts["past"] || 0) + 1;
+      if (e.status === "active") {
+        counts["active"] = (counts["active"] || 0) + 1;
+      } else if (e.status === "paused") {
+        if (new Date(e.eventDate) < now) {
+          counts["past"] = (counts["past"] || 0) + 1;
+        } else {
+          counts["paused"] = (counts["paused"] || 0) + 1;
+        }
       } else {
         counts[e.status] = (counts[e.status] || 0) + 1;
       }
@@ -71,11 +77,13 @@ export default function OrganizerEvents() {
     const now = new Date();
     let result = events;
     if (activeTab === "past") {
-      result = result.filter((e: any) => new Date(e.eventDate) < now);
+      result = result.filter((e: any) => e.status === "paused" && new Date(e.eventDate) < now);
+    } else if (activeTab === "active") {
+      result = result.filter((e: any) => e.status === "active");
+    } else if (activeTab === "paused") {
+      result = result.filter((e: any) => e.status === "paused" && new Date(e.eventDate) >= now);
     } else if (activeTab !== "all") {
-      result = result.filter((e: any) => e.status === activeTab && new Date(e.eventDate) >= now);
-    } else {
-      result = events;
+      result = result.filter((e: any) => e.status === activeTab);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
