@@ -183,10 +183,6 @@ export async function sendTicketsEmail(
             </td></tr>
           </table>
         </td></tr>
-        <tr><td style="padding:0 20px 20px 20px;text-align:center;">
-          <div style="font-size:12px;color:#71717a;margin-bottom:4px;">📞</div>
-          <div style="font-size:12px;color:#71717a;">Contact support</div>
-        </td></tr>
         <tr><td style="border-top:1px solid #e5e7eb;padding:16px 20px;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size:13px;color:#52525b;">
             <tr><td style="padding:4px 0;font-weight:600;color:#18181b;">Total Amount</td><td style="text-align:right;padding:4px 0;font-weight:700;color:#18181b;">€${totalPrice.toFixed(2)}</td></tr>
@@ -219,10 +215,6 @@ export async function sendTicketsEmail(
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 ${ticketStubs}
               </table>
-              <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
-              <p style="margin:0;font-size:13px;color:#71717a;text-align:center;">
-                If you have any questions, contact the event organizer.
-              </p>
             </td></tr>
             <tr><td style="padding:16px 0;text-align:center;">
               <span style="font-size:11px;color:#a1a1aa;">Powered by TixPass</span>
