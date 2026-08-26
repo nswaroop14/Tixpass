@@ -112,8 +112,6 @@ export async function sendPasswordResetEmail(toEmail: string, organizerName: str
 
 const formatEventDate = (date: Date, text?: string | null) => {
   if (text) return text;
-  // Fallback for older events: Format in IST (UTC+5:30) as requested by user
-  // This handles the server being in UTC (Vercel)
   return new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Kolkata',
     month: 'short',
@@ -134,7 +132,6 @@ export async function sendTicketsEmail(
 ) {
   const brandName = organizerName || "TixPass";
   console.log(`📧 Attempting to send tickets email to ${customerEmail} using ${process.env.SMTP_USER}...`);
-  // If SMTP is not configured, skip sending but log a warning
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     console.warn('⚠️ SMTP not configured. Skipping ticket email to:', customerEmail);
     console.log('Ticket links that would have been sent:');
@@ -142,37 +139,61 @@ export async function sendTicketsEmail(
     return;
   }
 
-  const ticketStubs = tickets.map(t => `
-    <tr><td style="padding:0 0 24px 0;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border:2px dashed #d1d5db;border-radius:12px;overflow:hidden;">
-        <tr><td style="background:#18181b;padding:20px 16px;text-align:center;">
-          <span style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:4px 12px;font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:#fff;">${event.ticketTypes}</span>
-          <br>
-          <span style="display:block;margin-top:10px;font-size:18px;font-weight:700;color:#fff;line-height:1.3;">${event.title}</span>
-        </td></tr>
-        <tr><td style="padding:20px 16px;text-align:center;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(t.uniqueTicketCode)}" alt="QR Code" width="160" height="160" style="display:block;margin:0 auto;width:160px;height:160px;border:1px solid #e5e7eb;" />
-          <div style="margin-top:12px;font-family:'Courier New',monospace;font-size:14px;color:#3f3f46;letter-spacing:2px;font-weight:700;">${t.uniqueTicketCode}</div>
-        </td></tr>
-        <tr><td style="padding:0 16px 16px 16px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size:13px;color:#52525b;">
-            <tr><td style="padding:4px 0;"><strong>Date:</strong> ${formatEventDate(new Date(event.eventDate), event.eventDateText)}</td></tr>
-            <tr><td style="padding:4px 0;"><strong>Venue:</strong> ${event.venue}</td></tr>
-            ${event.screen ? `<tr><td style="padding:4px 0;"><strong>Screen:</strong> ${event.screen}</td></tr>` : ''}
-            ${event.language ? `<tr><td style="padding:4px 0;"><strong>Language:</strong> ${event.language}</td></tr>` : ''}
-            <tr><td style="padding:4px 0;"><strong>Type:</strong> ${event.ticketTypes}</td></tr>
+  const ticketCount = tickets.length;
+  const ticketPrice = event.ticketPrice / 100;
+  const totalPrice = ticketPrice * ticketCount;
+
+  const ticketStubs = tickets.map((t, idx) => `
+    <tr><td style="padding:0 0 16px 0;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <tr><td style="padding:20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td width="90" valign="top">
+                ${event.bannerUrl ? `<img src="${event.bannerUrl}" alt="${event.title}" width="80" height="100" style="display:block;border-radius:8px;object-fit:cover;" />` : `<div style="width:80px;height:100px;background:#e4e4e7;border-radius:8px;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;color:#71717a;">No Image</span></div>`}
+              </td>
+              <td style="padding-left:16px;" valign="top">
+                <div style="font-size:16px;font-weight:700;color:#18181b;line-height:1.3;margin-bottom:4px;">${event.title}</div>
+                ${event.language ? `<div style="font-size:12px;color:#71717a;margin-bottom:2px;">${event.language}${event.screen ? `, ${event.screen}` : ''}</div>` : ''}
+                <div style="font-size:12px;color:#71717a;margin-bottom:2px;">${formatEventDate(new Date(event.eventDate), event.eventDateText)}</div>
+                <div style="font-size:12px;color:#71717a;">${event.venue}</div>
+              </td>
+            </tr>
           </table>
         </td></tr>
-        ${event.notes ? `
-        <tr><td style="padding:0 16px 16px 16px;">
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:8px;padding:12px;">
-            <tr><td style="font-size:12px;color:#6b7280;padding:4px 8px;">
-              <strong>Note:</strong> ${event.notes}
+        <tr><td style="padding:0 20px 20px 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f4f4f5;border-radius:12px;padding:16px;">
+            <tr><td style="text-align:center;padding:8px 0;">
+              <div style="font-size:12px;color:#71717a;margin-bottom:4px;">${ticketCount} Ticket(s)</div>
+              ${event.screen ? `<div style="font-size:14px;font-weight:600;color:#18181b;margin-bottom:2px;">${event.screen}</div>` : ''}
+              <div style="font-size:12px;color:#71717a;">${event.ticketTypes}</div>
+            </td></tr>
+            <tr><td style="text-align:center;padding:16px 0;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(t.uniqueTicketCode)}" alt="QR Code" width="140" height="140" style="display:block;margin:0 auto;width:140px;height:140px;" />
+            </td></tr>
+            <tr><td style="text-align:center;padding:0 0 8px 0;">
+              <div style="font-size:13px;font-weight:700;color:#18181b;letter-spacing:1px;">BOOKING ID: ${t.uniqueTicketCode}</div>
             </td></tr>
           </table>
-        </td></tr>` : ''}
-        <tr><td style="padding:0 16px 16px 16px;text-align:center;font-size:12px;color:#71717a;">
-          Show this QR code at the entrance for scanning.
+        </td></tr>
+        <tr><td style="padding:0 20px 20px 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;">
+            <tr><td style="padding:10px 12px;font-size:11px;color:#854d0e;text-align:center;">
+              Cancellation unavailable: cut-off time of 20 minutes before showtime has passed
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 20px 20px 20px;text-align:center;">
+          <div style="font-size:12px;color:#71717a;margin-bottom:4px;">📞</div>
+          <div style="font-size:12px;color:#71717a;">Contact support</div>
+        </td></tr>
+        <tr><td style="border-top:1px solid #e5e7eb;padding:16px 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="font-size:13px;color:#52525b;">
+            <tr><td style="padding:4px 0;font-weight:600;color:#18181b;">Total Amount</td><td style="text-align:right;padding:4px 0;font-weight:700;color:#18181b;">€${totalPrice.toFixed(2)}</td></tr>
+            <tr><td style="padding:4px 0;">Ticket(s) price (${ticketCount})</td><td style="text-align:right;padding:4px 0;">€${ticketPrice.toFixed(2)}</td></tr>
+            <tr><td style="padding:4px 0;">Convenience fee</td><td style="text-align:right;padding:4px 0;">€0.00</td></tr>
+            <tr><td style="padding:4px 0;">Discount</td><td style="text-align:right;padding:4px 0;">- €0.00</td></tr>
+          </table>
         </td></tr>
       </table>
     </td></tr>
@@ -191,15 +212,10 @@ export async function sendTicketsEmail(
         <tr><td align="center" style="padding:24px 12px;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:480px;">
             <tr><td style="background:#18181b;border-radius:16px 16px 0 0;padding:24px 20px;text-align:center;">
-              <span style="font-size:24px;font-weight:700;color:#fff;">${brandName}</span>
+              <div style="font-size:24px;font-weight:700;color:#fff;margin-bottom:4px;">${brandName}</div>
+              <div style="font-size:12px;color:#a1a1aa;">Your Ticket</div>
             </td></tr>
-            <tr><td style="background:#fff;padding:24px 20px;">
-              <p style="margin:0 0 16px 0;font-size:16px;color:#18181b;text-align:center;">
-                Hi <strong>${customerName}</strong>,
-              </p>
-              <p style="margin:0 0 20px 0;font-size:14px;color:#52525b;text-align:center;">
-                Your payment for <strong>${tickets.length} ticket(s)</strong> to <strong>${event.title}</strong> has been confirmed!
-              </p>
+            <tr><td style="background:#fff;padding:24px 20px;border-radius:0 0 16px 16px;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 ${ticketStubs}
               </table>
@@ -208,7 +224,7 @@ export async function sendTicketsEmail(
                 If you have any questions, contact the event organizer.
               </p>
             </td></tr>
-            <tr><td style="background:#18181b;border-radius:0 0 16px 16px;padding:16px 20px;text-align:center;">
+            <tr><td style="padding:16px 0;text-align:center;">
               <span style="font-size:11px;color:#a1a1aa;">Powered by TixPass</span>
             </td></tr>
           </table>
