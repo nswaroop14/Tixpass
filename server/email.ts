@@ -196,9 +196,9 @@ export async function sendTicketsEmail(
   }
 
   const mailOptions = {
-    from: process.env.SMTP_FROM || '"TixPass" <no-reply@tixpass.com>',
+    from: process.env.SMTP_FROM || `"${organizerName || brandName}" <no-reply@tixpass.com>`,
     to: customerEmail,
-    subject: `Your TixPass Ticket — ${event.title}`,
+    subject: `${organizerName || brandName} — ${event.title}`,
     html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -210,7 +210,7 @@ export async function sendTicketsEmail(
 
       <!-- HEADER -->
       <tr><td style="padding:0 0 20px 0;text-align:center;">
-        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">T<span style="color:#6d28d9;">ix</span>Pass</div>
+        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">${organizerName || brandName}</div>
       </td></tr>
 
       <!-- CONFIRMATION BANNER -->
