@@ -238,34 +238,41 @@ export async function sendTicketsEmail(
           <tr><td style="padding:20px 28px;">
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:12px;">
               <tr>
-                <td width="33%" style="padding:16px 8px;text-align:center;border-right:1px solid #e5e7eb;">
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">DATE</div>
-                  <div style="font-size:13px;font-weight:600;color:#18181b;line-height:1.4;">${dateStr}</div>
+                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">
+                  <div style="font-size:20px;margin-bottom:4px;">📅</div>
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">DATE</div>
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${dateStr}</div>
                 </td>
-                <td width="33%" style="padding:16px 8px;text-align:center;border-right:1px solid #e5e7eb;">
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">TIME</div>
-                  <div style="font-size:13px;font-weight:600;color:#18181b;line-height:1.4;">${timeStr}</div>
+                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">
+                  <div style="font-size:20px;margin-bottom:4px;">⏱</div>
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">TIME</div>
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${timeStr}</div>
                 </td>
-                <td width="34%" style="padding:16px 8px;text-align:center;">
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">VENUE</div>
-                  <div style="font-size:12px;font-weight:600;color:#18181b;line-height:1.4;">${event.venue}</div>
+                <td width="34%" style="padding:14px 8px;text-align:center;border-bottom:1px solid #e5e7eb;">
+                  ${event.screen ? `<div style="font-size:20px;margin-bottom:4px;">🎬</div>
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SCREEN</div>
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.screen}</div>` : '&nbsp;'}
                 </td>
               </tr>
-            </table>
-          </td></tr>
-
-          <!-- SCREEN / LANGUAGE -->
-          ${event.screen || event.language || event.subtitle ? `
-          <tr><td style="padding:0 28px 16px 28px;">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
               <tr>
-                ${event.screen ? `<td style="padding:4px 8px 4px 0;"><span style="display:inline-block;background:#ede9fe;color:#6d28d9;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">Screen: ${event.screen}</span></td>` : ''}
-                ${event.language ? `<td style="padding:4px 8px 4px 0;"><span style="display:inline-block;background:#f0f0f3;color:#52525b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">Audio: ${event.language}</span></td>` : ''}
-                ${event.subtitle ? `<td style="padding:4px 0;"><span style="display:inline-block;background:#f0f0f3;color:#52525b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">Subtitles: ${event.subtitle}</span></td>` : ''}
+                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;">
+                  <div style="font-size:20px;margin-bottom:4px;">📍</div>
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">VENUE</div>
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.venue}</div>
+                </td>
+                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;">
+                  ${event.language ? `<div style="font-size:20px;margin-bottom:4px;">🌐</div>
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">AUDIO</div>
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.language}</div>` : '&nbsp;'}
+                </td>
+                <td width="34%" style="padding:14px 8px;text-align:center;">
+                  ${event.subtitle ? `<div style="font-size:20px;margin-bottom:4px;">💬</div>
+                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SUBTITLES</div>
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.subtitle}</div>` : '&nbsp;'}
+                </td>
               </tr>
             </table>
           </td></tr>
-          ` : ''}
 
           <!-- PERFORATION DIVIDER -->
           <tr><td style="padding:0 20px;">
