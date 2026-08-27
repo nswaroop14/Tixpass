@@ -69,48 +69,47 @@ export default function PublicTicket() {
 
             {/* Ticket Details */}
             <div className="p-6 space-y-5">
-              {/* Date & Venue */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{format(new Date(event.eventDate), "EEEE, MMMM d, yyyy")}</p>
-                    <p className="text-xs text-gray-500">{format(new Date(event.eventDate), "h:mm a")}</p>
-                  </div>
+              {/* Info Grid */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Row 1 */}
+                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                  <Calendar className="w-4 h-4 text-indigo-500 mx-auto mb-1.5" />
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Date</p>
+                  <p className="text-xs font-bold text-gray-900 leading-tight">{format(new Date(event.eventDate), "EEE, MMM d")}</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{event.venue}</p>
-                  </div>
+                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                  <span className="text-xs font-bold text-indigo-500">⏱</span>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5 mt-1">Time</p>
+                  <p className="text-xs font-bold text-gray-900 leading-tight">{format(new Date(event.eventDate), "h:mm a")}</p>
                 </div>
-                {event.language && (
-                  <div className="flex items-start gap-3">
-                    <span className="w-4 h-4 text-gray-400 mt-0.5 text-xs font-bold">🌐</span>
-                    <div>
-                      <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Audio</p>
-                      <p className="text-sm font-semibold text-gray-900">{event.language}</p>
-                    </div>
+                {event.screen ? (
+                  <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                    <span className="text-xs font-bold text-indigo-500">🎬</span>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5 mt-1">Screen</p>
+                    <p className="text-xs font-bold text-gray-900 leading-tight">{event.screen}</p>
                   </div>
-                )}
-                {event.subtitle && (
-                  <div className="flex items-start gap-3">
-                    <span className="w-4 h-4 text-gray-400 mt-0.5 text-xs font-bold">💬</span>
-                    <div>
-                      <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Subtitles</p>
-                      <p className="text-sm font-semibold text-gray-900">{event.subtitle}</p>
-                    </div>
+                ) : <div />}
+
+                {/* Row 2 */}
+                <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                  <MapPin className="w-4 h-4 text-indigo-500 mx-auto mb-1.5" />
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Venue</p>
+                  <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-2">{event.venue}</p>
+                </div>
+                {event.language ? (
+                  <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                    <span className="text-xs font-bold text-indigo-500">🌐</span>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5 mt-1">Audio</p>
+                    <p className="text-xs font-bold text-gray-900 leading-tight">{event.language}</p>
                   </div>
-                )}
-                {event.screen && (
-                  <div className="flex items-start gap-3">
-                    <span className="w-4 h-4 text-gray-400 mt-0.5 text-xs font-bold">🎬</span>
-                    <div>
-                      <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Screen</p>
-                      <p className="text-sm font-semibold text-gray-900">{event.screen}</p>
-                    </div>
+                ) : <div />}
+                {event.subtitle ? (
+                  <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
+                    <span className="text-xs font-bold text-indigo-500">💬</span>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5 mt-1">Subtitles</p>
+                    <p className="text-xs font-bold text-gray-900 leading-tight">{event.subtitle}</p>
                   </div>
-                )}
+                ) : <div />}
               </div>
 
               {/* Ticket Holder */}
