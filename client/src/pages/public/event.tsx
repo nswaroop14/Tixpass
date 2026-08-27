@@ -447,6 +447,12 @@ export default function PublicEvent() {
                         <p className="text-sm font-medium text-gray-900">{event.language}</p>
                       </div>
                     )}
+                    {event.subtitle && (
+                      <div>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Subtitle</p>
+                        <p className="text-sm font-medium text-gray-900">{event.subtitle}</p>
+                      </div>
+                    )}
                     {event.screen && (
                       <div>
                         <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Screen</p>
@@ -641,6 +647,12 @@ export default function PublicEvent() {
                       <MapPin className="w-3.5 h-3.5" />
                       <span>{event.venue}</span>
                     </div>
+                    {event.subtitle && (
+                      <div className="flex items-center gap-2 text-gray-300">
+                        <span className="text-xs">💬</span>
+                        <span>{event.subtitle}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="mt-4 pt-4 border-t border-white/10">
                     <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{event.ticketTypes}</span>

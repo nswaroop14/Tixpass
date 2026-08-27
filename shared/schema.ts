@@ -75,6 +75,7 @@ export const events = pgTable("events", {
   description: text("description").default(""),
   bannerUrl: text("banner_url"),
   language: text("language"),
+  subtitle: text("subtitle"),
   screen: text("screen"),
   venue: text("venue").notNull(),
   eventDate: timestamp("event_date").notNull(),

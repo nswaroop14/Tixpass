@@ -33,6 +33,7 @@ export default function OrganizerEvents() {
     description: "",
     bannerUrl: "",
     language: "",
+    subtitle: "",
     screen: "",
     venue: "",
     eventDate: "",
@@ -145,7 +146,7 @@ export default function OrganizerEvents() {
         toast({ title: "Event created", description: "Your event has been created successfully." });
       }
       setIsOpen(false);
-      setFormData({ title: "", description: "", bannerUrl: "", language: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
+      setFormData({ title: "", description: "", bannerUrl: "", language: "", subtitle: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
       setImagePreview(null);
     } catch (err: any) {
       console.error("Create/Update event failed:", err);
@@ -160,6 +161,7 @@ export default function OrganizerEvents() {
       description: event.description,
       bannerUrl: event.bannerUrl || "",
       language: event.language || "",
+      subtitle: event.subtitle || "",
       screen: event.screen || "",
       venue: event.venue,
       eventDate: format(new Date(event.eventDate), "yyyy-MM-dd'T'HH:mm"),
@@ -226,7 +228,7 @@ export default function OrganizerEvents() {
               setIsOpen(open);
               if (!open) {
                 setEditingEvent(null);
-                setFormData({ title: "", description: "", bannerUrl: "", language: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
+                setFormData({ title: "", description: "", bannerUrl: "", language: "", subtitle: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
                 setImagePreview(null);
               }
             }}
@@ -337,6 +339,12 @@ export default function OrganizerEvents() {
                     <div className="space-y-1.5">
                       <Label className="text-sm">Screen</Label>
                       <Input value={formData.screen} onChange={(e) => setFormData({ ...formData, screen: e.target.value })} className="h-9" placeholder="e.g. Screen 1, IMAX" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Subtitle</Label>
+                      <Input value={formData.subtitle} onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })} className="h-9" placeholder="e.g. English subtitles available" />
                     </div>
                   </div>
                 </div>

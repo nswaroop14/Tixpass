@@ -34,6 +34,7 @@ export async function initialize() {
         const { pool } = await import("./db.js");
         const migrations = [
           `ALTER TABLE events ADD COLUMN IF NOT EXISTS language text`,
+          `ALTER TABLE events ADD COLUMN IF NOT EXISTS subtitle text`,
           `ALTER TABLE events ADD COLUMN IF NOT EXISTS screen text`,
           `ALTER TABLE events ADD COLUMN IF NOT EXISTS notes text`,
           `ALTER TABLE organizers ADD COLUMN IF NOT EXISTS brand_name text`,

@@ -105,6 +105,12 @@ export function EventCard({
               </span>
             </div>
           )}
+          {event.subtitle && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Ticket className="w-3.5 h-3.5 text-gray-400" />
+              <span>{event.subtitle}</span>
+            </div>
+          )}
           {event.ticketTypes && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Ticket className="w-3.5 h-3.5 text-gray-400" />
