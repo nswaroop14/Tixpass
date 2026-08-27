@@ -198,7 +198,7 @@ export async function sendTicketsEmail(
   const mailOptions = {
     from: process.env.SMTP_FROM || `"${organizerName || brandName}" <no-reply@tixpass.com>`,
     to: customerEmail,
-    subject: `${organizerName || brandName} — ${event.title}`,
+    subject: `🎬 Booking Confirmed — ${event.title} | TixPass`,
     html: `
 <!DOCTYPE html>
 <html lang="en">
