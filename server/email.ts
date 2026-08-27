@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer';
 import { format } from 'date-fns';
 import { Booking, Event, Ticket } from '../shared/schema.js';
+import fs from 'fs';
+import path from 'path';
 
 // Create a transporter using SMTP
 const transporter = nodemailer.createTransport({
@@ -173,6 +175,22 @@ export async function sendTicketsEmail(
 
   // Handle poster image - convert base64 to CID attachment or use external URL
   const attachments: any[] = [];
+
+  // Attach TixPass logo
+  try {
+    const logoPath = path.join(process.cwd(), 'Tixpass logo.png');
+    if (fs.existsSync(logoPath)) {
+      attachments.push({
+        filename: 'tixpass-logo.png',
+        content: fs.readFileSync(logoPath),
+        contentType: 'image/png',
+        cid: 'tixpass-logo'
+      });
+    }
+  } catch (e) {
+    console.warn('Could not load TixPass logo for email');
+  }
+
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
 
@@ -192,7 +210,7 @@ export async function sendTicketsEmail(
   }
 
   if (!posterHtml) {
-    posterHtml = `<div style="width:100%;height:180px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;font-weight:800;color:rgba(255,255,255,0.15);letter-spacing:8px;">TIXPASS</span></div>`;
+    posterHtml = `<div style="width:100%;height:180px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><img src="cid:tixpass-logo" alt="TixPass" width="140" style="height:auto;" /></div>`;
   }
 
   const mailOptions = {
@@ -361,8 +379,8 @@ export async function sendTicketsEmail(
 
       <!-- FOOTER -->
       <tr><td style="padding:28px 0 0 0;text-align:center;">
-        <div style="font-size:22px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">T<span style="color:#6d28d9;">ix</span>Pass</div>
-        <div style="font-size:12px;color:#a1a1aa;margin-top:4px;font-style:italic;">Your ticket. Your experience.</div>
+        <img src="cid:tixpass-logo" alt="TixPass" width="160" style="display:inline-block;height:auto;" />
+        <div style="font-size:12px;color:#a1a1aa;margin-top:8px;font-style:italic;">Your ticket. Your experience.</div>
         <div style="font-size:11px;color:#d4d4d8;margin-top:12px;">&copy; ${new Date().getFullYear()} TixPass. All rights reserved.</div>
       </td></tr>
 
