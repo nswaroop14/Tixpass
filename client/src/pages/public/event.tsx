@@ -443,13 +443,13 @@ export default function PublicEvent() {
                     </div>
                     {event.language && (
                       <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Language</p>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Audio</p>
                         <p className="text-sm font-medium text-gray-900">{event.language}</p>
                       </div>
                     )}
                     {event.subtitle && (
                       <div>
-                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Subtitle</p>
+                        <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Subtitles</p>
                         <p className="text-sm font-medium text-gray-900">{event.subtitle}</p>
                       </div>
                     )}
@@ -650,7 +650,7 @@ export default function PublicEvent() {
                     {event.subtitle && (
                       <div className="flex items-center gap-2 text-gray-300">
                         <span className="text-xs">💬</span>
-                        <span>{event.subtitle}</span>
+                        <span>Subtitles: {event.subtitle}</span>
                       </div>
                     )}
                   </div>

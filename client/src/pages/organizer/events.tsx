@@ -333,8 +333,8 @@ export default function OrganizerEvents() {
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Language</Label>
-                      <Input value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value })} className="h-9" placeholder="e.g. Hindi, English" />
+                      <Label className="text-sm">Audio Language</Label>
+                      <Input value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value })} className="h-9" placeholder="e.g. Hindi" />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-sm">Screen</Label>
@@ -343,8 +343,8 @@ export default function OrganizerEvents() {
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="space-y-1.5">
-                      <Label className="text-sm">Subtitle</Label>
-                      <Input value={formData.subtitle} onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })} className="h-9" placeholder="e.g. English subtitles available" />
+                      <Label className="text-sm">Subtitles</Label>
+                      <Input value={formData.subtitle} onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })} className="h-9" placeholder="e.g. English" />
                     </div>
                   </div>
                 </div>

@@ -260,8 +260,8 @@ export async function sendTicketsEmail(
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
               <tr>
                 ${event.screen ? `<td style="padding:4px 8px 4px 0;"><span style="display:inline-block;background:#ede9fe;color:#6d28d9;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">Screen: ${event.screen}</span></td>` : ''}
-                ${event.language ? `<td style="padding:4px 0;"><span style="display:inline-block;background:#f0f0f3;color:#52525b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">${event.language}</span></td>` : ''}
-                ${event.subtitle ? `<td style="padding:4px 0;"><span style="display:inline-block;background:#f0f0f3;color:#52525b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">${event.subtitle}</span></td>` : ''}
+                ${event.language ? `<td style="padding:4px 8px 4px 0;"><span style="display:inline-block;background:#f0f0f3;color:#52525b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">Audio: ${event.language}</span></td>` : ''}
+                ${event.subtitle ? `<td style="padding:4px 0;"><span style="display:inline-block;background:#f0f0f3;color:#52525b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;">Subtitles: ${event.subtitle}</span></td>` : ''}
               </tr>
             </table>
           </td></tr>
@@ -370,8 +370,8 @@ export async function sendTicketsEmail(
       `Time: ${timeStr}`,
       `Venue: ${event.venue}`,
       event.screen ? `Screen: ${event.screen}` : '',
-      event.language ? `Language: ${event.language}` : '',
-      event.subtitle ? `Subtitle: ${event.subtitle}` : '',
+      event.language ? `Audio: ${event.language}` : '',
+      event.subtitle ? `Subtitles: ${event.subtitle}` : '',
       `Type: ${event.ticketTypes}`,
       ``,
       `TICKET`,

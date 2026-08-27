@@ -99,7 +99,7 @@ export function EventCard({
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Ticket className="w-3.5 h-3.5 text-gray-400" />
               <span>
-                {event.language && <span>{event.language}</span>}
+                {event.language && <span>Audio: {event.language}</span>}
                 {event.language && event.screen && <span> · </span>}
                 {event.screen && <span>Screen: {event.screen}</span>}
               </span>
@@ -108,7 +108,7 @@ export function EventCard({
           {event.subtitle && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Ticket className="w-3.5 h-3.5 text-gray-400" />
-              <span>{event.subtitle}</span>
+              <span>Subtitles: {event.subtitle}</span>
             </div>
           )}
           {event.ticketTypes && (
