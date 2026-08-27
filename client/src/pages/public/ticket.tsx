@@ -158,9 +158,16 @@ export default function PublicTicket() {
               )}
 
               {event.notes && (
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1">Notes</p>
-                  <p className="text-xs text-gray-600 whitespace-pre-wrap">{event.notes}</p>
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                  <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider mb-1.5">Important Information</p>
+                  <ul className="space-y-1">
+                    {event.notes.split("\n").filter((n: string) => n.trim()).map((note: string, i: number) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-amber-800">
+                        <span className="text-amber-400 mt-0.5 shrink-0">•</span>
+                        <span>{note.trim()}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

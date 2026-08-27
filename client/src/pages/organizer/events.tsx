@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/organizer/status-badge";
 import { EventCard } from "@/components/organizer/event-card";
 import { EmptyState } from "@/components/organizer/empty-state";
 import { format } from "date-fns";
-import { Plus, Calendar, Loader2, Search, Upload, X, Image } from "lucide-react";
+import { Plus, Calendar, Loader2, Search, Upload, X, Image, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type FilterTab = "all" | "active" | "paused" | "draft" | "past";
@@ -44,6 +44,7 @@ export default function OrganizerEvents() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [notesList, setNotesList] = useState<string[]>([]);
 
   const tabs: { key: FilterTab; label: string }[] = [
     { key: "active", label: "Active" },
@@ -130,6 +131,7 @@ export default function OrganizerEvents() {
     }
     const data = {
       ...formData,
+      notes: notesList.filter(n => n.trim()).join("\n"),
       eventDate: eventDateObj,
       eventDateText: format(eventDateObj, "MMM d, yyyy • h:mm a"),
       ticketPrice: Math.round(priceFloat * 100),
@@ -147,6 +149,7 @@ export default function OrganizerEvents() {
       }
       setIsOpen(false);
       setFormData({ title: "", description: "", bannerUrl: "", language: "", subtitle: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
+      setNotesList([]);
       setImagePreview(null);
     } catch (err: any) {
       console.error("Create/Update event failed:", err);
@@ -171,6 +174,7 @@ export default function OrganizerEvents() {
       notes: event.notes || "",
     });
     setImagePreview(event.bannerUrl || null);
+    setNotesList(event.notes ? event.notes.split("\n").filter((n: string) => n.trim()) : []);
     setIsOpen(true);
   };
 
@@ -229,6 +233,7 @@ export default function OrganizerEvents() {
               if (!open) {
                 setEditingEvent(null);
                 setFormData({ title: "", description: "", bannerUrl: "", language: "", subtitle: "", screen: "", venue: "", eventDate: "", ticketTypes: "General Admission", ticketPrice: "", totalCapacity: "100", notes: "" });
+                setNotesList([]);
                 setImagePreview(null);
               }
             }}
@@ -371,10 +376,40 @@ export default function OrganizerEvents() {
                 {/* Notes */}
                 <div>
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Additional Notes</h4>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm">Notes (optional)</Label>
-                    <Textarea rows={2} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="text-sm" placeholder="e.g. No outside food allowed. ID required at entry." />
-                    <p className="text-[11px] text-gray-400">These notes will be included in the ticket emails sent to customers.</p>
+                  <div className="space-y-2">
+                    {notesList.map((note, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          value={note}
+                          onChange={(e) => {
+                            const updated = [...notesList];
+                            updated[index] = e.target.value;
+                            setNotesList(updated);
+                          }}
+                          className="h-9 text-sm"
+                          placeholder="e.g. No outside food allowed"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 w-9 p-0 text-red-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                          onClick={() => setNotesList(notesList.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs gap-1.5 border-dashed"
+                      onClick={() => setNotesList([...notesList, ""])}
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Note
+                    </Button>
+                    <p className="text-[11px] text-gray-400">Each note will appear on a separate line in ticket emails.</p>
                   </div>
                 </div>
 

@@ -339,7 +339,14 @@ export async function sendTicketsEmail(
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
           <tr><td style="padding:20px 24px;">
             <div style="font-size:12px;font-weight:700;color:#18181b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Important Information</div>
-            <div style="font-size:13px;color:#52525b;line-height:1.6;">${event.notes}</div>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+              ${event.notes.split("\n").filter((n: string) => n.trim()).map((note: string) => `
+              <tr>
+                <td style="padding:3px 0;font-size:13px;color:#52525b;line-height:1.5;vertical-align:top;width:16px;">•</td>
+                <td style="padding:3px 0;font-size:13px;color:#52525b;line-height:1.5;">${note.trim()}</td>
+              </tr>
+              `).join('')}
+            </table>
           </td></tr>
         </table>
       </td></tr>
@@ -389,7 +396,7 @@ export async function sendTicketsEmail(
       `Status: PAID`,
       event.notes ? `` : '',
       event.notes ? `Important Information:` : '',
-      event.notes ? event.notes : '',
+      event.notes ? event.notes.split("\n").filter((n: string) => n.trim()).map((n: string) => `• ${n.trim()}`).join("\n") : '',
       ``,
       `Your ticket. Your experience.`,
       `© ${new Date().getFullYear()} TixPass`

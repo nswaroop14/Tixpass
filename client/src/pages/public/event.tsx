@@ -470,8 +470,15 @@ export default function PublicEvent() {
                   </div>
                   {event.notes && (
                     <div className="mt-5 p-4 bg-amber-50 rounded-xl border border-amber-100">
-                      <p className="text-[11px] text-amber-600 font-semibold uppercase tracking-wider mb-1">Important Notes</p>
-                      <p className="text-sm text-amber-800 whitespace-pre-wrap">{event.notes}</p>
+                      <p className="text-[11px] text-amber-600 font-semibold uppercase tracking-wider mb-2">Important Information</p>
+                      <ul className="space-y-1.5">
+                        {event.notes.split("\n").filter((n: string) => n.trim()).map((note: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-amber-800">
+                            <span className="text-amber-400 mt-0.5 shrink-0">•</span>
+                            <span>{note.trim()}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>
