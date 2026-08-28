@@ -18,6 +18,7 @@ export const organizers = pgTable("organizers", {
   name: text("name").notNull(),
   brandName: text("brand_name"),
   logoUrl: text("logo_url"),
+  phone: text("phone"),
   status: text("status").notNull().default("active"), // 'active', 'paused'
   reportEmail: text("report_email"),
   reportTime: text("report_time"),
@@ -139,6 +140,11 @@ export const organizerBankInputSchema = z.object({
   accountNumber: z.string().min(6),
   routingNumber: z.string().min(4),
   accountType: z.string().min(2),
+  paymentMethod: z.enum(['bank', 'link', 'paypal', 'revolut']).optional(),
+  paymentLink: z.string().optional(),
+  paypalClientId: z.string().optional(),
+  paymentNumber: z.string().optional(),
+  referenceCode: z.string().optional(),
 });
 export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true, remainingCapacity: true }).extend({
   eventDate: z.coerce.date(),

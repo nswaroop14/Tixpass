@@ -41,6 +41,8 @@ export default function OrganizerProfile() {
     paymentMethod: "bank",
     paymentLink: "",
     paypalClientId: "",
+    paymentNumber: "",
+    referenceCode: "",
   });
   const [bankLocked, setBankLocked] = useState<boolean>(false);
   const [bankEditMode, setBankEditMode] = useState<boolean>(false);
@@ -56,6 +58,8 @@ export default function OrganizerProfile() {
         paymentMethod: (bank.data.paymentMethod as any) || prev.paymentMethod || "bank",
         paymentLink: prev.paymentLink || bank.data.paymentLink || "",
         paypalClientId: prev.paypalClientId || (bank.data as any).paypalClientId || "",
+        paymentNumber: prev.paymentNumber || bank.data.paymentNumber || "",
+        referenceCode: prev.referenceCode || bank.data.referenceCode || "",
       }));
     }
   }, [bank.isLoading, bank.data]);
@@ -270,6 +274,7 @@ export default function OrganizerProfile() {
                     { value: "bank", label: "Bank Account" },
                     { value: "link", label: "Payment Link" },
                     { value: "paypal", label: "PayPal" },
+                    { value: "revolut", label: "Revolut / BOC" },
                   ].map((method) => (
                     <label
                       key={method.value}
@@ -370,6 +375,35 @@ export default function OrganizerProfile() {
                     </p>
                   </div>
                 </div>
+              ) : bankForm.paymentMethod === "revolut" ? (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Revolut / BOC Number</Label>
+                    <Input
+                      disabled={!bankEditMode}
+                      placeholder="+357 99 000000 or @username"
+                      value={bankForm.paymentNumber}
+                      onChange={(e) => setBankForm({ ...bankForm, paymentNumber: e.target.value })}
+                      className="h-9"
+                    />
+                    <p className="text-[11px] text-gray-400">
+                      The Revolut or BOC number customers will send money to.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Reference Code Label (Optional)</Label>
+                    <Input
+                      disabled={!bankEditMode}
+                      placeholder="Payment Reference"
+                      value={bankForm.referenceCode}
+                      onChange={(e) => setBankForm({ ...bankForm, referenceCode: e.target.value })}
+                      className="h-9"
+                    />
+                    <p className="text-[11px] text-gray-400">
+                      Label for the reference field shown to customers (e.g., "Payment Reference", "Booking Code").
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-1.5">
                   <Label className="text-sm">Payment Link (URL)</Label>
@@ -412,6 +446,11 @@ export default function OrganizerProfile() {
                     }
                     if (!bankForm.paymentLink || bankForm.paymentLink.length < 5) {
                       setError("Please provide a valid PayPal Hosted Button ID");
+                      return;
+                    }
+                  } else if (bankForm.paymentMethod === "revolut") {
+                    if (!bankForm.paymentNumber || bankForm.paymentNumber.length < 3) {
+                      setError("Please provide a valid Revolut / BOC number");
                       return;
                     }
                   }

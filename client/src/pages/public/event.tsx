@@ -23,6 +23,9 @@ import {
   Shield,
   Minus,
   Plus,
+  MessageCircle,
+  Mail,
+  Phone,
 } from "lucide-react";
 
 export default function PublicEvent() {
@@ -40,6 +43,16 @@ export default function PublicEvent() {
   const [paypalError, setPaypalError] = useState<string | null>(null);
   const [txRef, setTxRef] = useState("");
   const [copied, setCopied] = useState(false);
+  const [revolutRef, setRevolutRef] = useState<string>("");
+
+  const generateRevolutRef = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -166,6 +179,7 @@ export default function PublicEvent() {
         ticketQuantity: formData.qty,
       });
       setBookingId(res.id);
+      setRevolutRef(generateRevolutRef());
       setStep(2);
     } catch (err) {
       console.error(err);
@@ -186,6 +200,23 @@ export default function PublicEvent() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleRevolutPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookingId || !revolutRef) return;
+    try {
+      await submitPayment.mutateAsync({ id: bookingId, transactionReference: revolutRef });
+      setStep(3);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCopyRevolutRef = () => {
+    navigator.clipboard.writeText(revolutRef);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleCopyRef = () => {
@@ -517,6 +548,78 @@ export default function PublicEvent() {
                       )}
                     </div>
                   </div>
+                ) : bank?.paymentMethod === "revolut" && bank?.paymentNumber ? (
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                          <Banknote className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Revolut / BOC Payment</p>
+                          <p className="text-xs text-gray-500">Transfer using the details below</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Transfer the amount to the Revolut/BOC number below. <strong>You must include the unique 4-digit reference code</strong> shown below in the transfer description/reference field so we can match your payment.
+                      </p>
+                      
+                      {/* Revolut/BOC Number */}
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+                        <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">Revolut / BOC Number</p>
+                        <div className="flex items-center gap-2">
+                          <code className="font-mono text-lg font-semibold text-gray-900 flex-1 bg-gray-50 px-3 py-2 rounded border border-gray-200 text-center">{bank.paymentNumber}</code>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(bank.paymentNumber);
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            }}
+                            className="h-10"
+                          >
+                            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-2 text-center">Tap to copy</p>
+                      </div>
+
+                      {/* Unique Reference Code */}
+                      <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 mb-4">
+                        <p className="text-xs text-amber-600 font-medium uppercase tracking-wider mb-1">Unique Reference Code (Required)</p>
+                        <div className="flex items-center justify-center gap-2">
+                          <code className="font-mono text-2xl font-bold text-amber-800 tracking-widest bg-white px-4 py-3 rounded border border-amber-200 text-center w-full max-w-xs">{revolutRef}</code>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCopyRevolutRef}
+                            className="h-12"
+                          >
+                            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                        <p className="text-[11px] text-amber-600 mt-2 text-center font-medium">
+                          Enter this code in the transfer reference/description field
+                        </p>
+                      </div>
+
+                      <p className="text-xs text-gray-500 text-center">
+                        After completing the transfer, click "Payment Done" below.
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-11 text-sm"
+                      onClick={handleRevolutPayment}
+                      disabled={submitPayment.isPending}
+                    >
+                      {submitPayment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Payment Done"}
+                    </Button>
+                  </div>
                 ) : bank?.paymentMethod === "link" && bank?.paymentLink ? (
                   <div className="space-y-4">
                     <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
@@ -629,12 +732,50 @@ export default function PublicEvent() {
                 <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="w-9 h-9 text-emerald-600" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
-                <p className="text-sm text-gray-500 mb-6">
-                  {txRef
-                    ? `We're verifying your payment reference: ${txRef}`
-                    : "Your payment has been received."}
-                </p>
+                {bank?.paymentMethod === "revolut" ? (
+                  <>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Payment Submitted</h2>
+                    <p className="text-sm text-gray-500 mb-6">
+                      Your payment has been submitted. Ticket will be delivered to your email after payment confirmation by organizer.
+                    </p>
+                    <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 mb-6 text-left">
+                      <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4" /> Need Help?
+                      </p>
+                      <p className="text-sm text-blue-700 mb-2">
+                        If you have any questions about your payment or booking, please contact the organizer:
+                      </p>
+                      <div className="space-y-1.5 text-sm text-blue-700">
+                        <p className="font-medium">{(event as any).organizerName || "TixPass"}</p>
+                        {(event as any).organizerEmail && (
+                          <p className="flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5" />
+                            <a href={`mailto:${(event as any).organizerEmail}`} className="underline hover:no-underline">
+                              {(event as any).organizerEmail}
+                            </a>
+                          </p>
+                        )}
+                        {(event as any).organizerPhone && (
+                          <p className="flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5" />
+                            <a href={`tel:${(event as any).organizerPhone}`} className="underline hover:no-underline">
+                              {(event as any).organizerPhone}
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+                    <p className="text-sm text-gray-500 mb-6">
+                      {txRef
+                        ? `We're verifying your payment reference: ${txRef}`
+                        : "Your payment has been received."}
+                    </p>
+                  </>
+                )}
 
                 {/* Digital Ticket Preview */}
                 <div className="bg-gray-950 rounded-2xl p-6 text-white text-left max-w-sm mx-auto mb-6">
@@ -666,10 +807,12 @@ export default function PublicEvent() {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-6 text-sm text-gray-600">
-                  Once approved, your unique digital tickets will be sent to{" "}
-                  <strong className="text-gray-900">{formData.email}</strong>
-                </div>
+                {bank?.paymentMethod !== "revolut" && (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-6 text-sm text-gray-600">
+                    Once approved, your unique digital tickets will be sent to{" "}
+                    <strong className="text-gray-900">{formData.email}</strong>
+                  </div>
+                )}
 
                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-11 text-sm" onClick={() => (window.location.href = "/")}>
                   Return to Events

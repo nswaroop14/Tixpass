@@ -362,6 +362,11 @@ export async function registerRoutes(
     accountNumber: z.string().optional(),
     routingNumber: z.string().optional(),
     accountType: z.string().optional(),
+    paymentMethod: z.enum(['bank','link','paypal','revolut']).optional(),
+    paymentLink: z.string().optional(),
+    paypalClientId: z.string().optional(),
+    paymentNumber: z.string().optional(),
+    referenceCode: z.string().optional(),
   });
 
   app.get(ORG_EVENTS_BANK_GET_PATH, authenticateToken, requireOrganizer, async (req: any, res) => {
@@ -894,7 +899,12 @@ export async function registerRoutes(
       return res.status(404).json({ message: "Event not found" });
     }
     const org = await storage.getOrganizerById(event.organizerId);
-    res.status(200).json({ ...event, organizerName: org?.brandName || org?.name || "TixPass", organizerLogo: org?.logoUrl || undefined });
+    let organizerEmail: string | undefined;
+    if (org) {
+      const user = await storage.getUser(org.userId);
+      organizerEmail = user?.email;
+    }
+    res.status(200).json({ ...event, organizerName: org?.brandName || org?.name || "TixPass", organizerLogo: org?.logoUrl || undefined, organizerEmail, organizerPhone: org?.phone });
   });
 
   // Organizer profile (returns branding + report settings)
@@ -905,6 +915,7 @@ export async function registerRoutes(
       name: org.name,
       brandName: org.brandName || "",
       logoUrl: org.logoUrl || "",
+      phone: org.phone || "",
       reportEmail: org.reportEmail || "",
       reportTime: org.reportTime || "02:00",
       reportEnabled: org.reportEnabled ?? true,
@@ -949,15 +960,16 @@ export async function registerRoutes(
     }
   });
 
-  // Organizer branding (name + logo for emails/tickets)
+  // Organizer branding (name + logo + phone for emails/tickets)
   app.post("/api/organizer/branding", authenticateToken, requireOrganizer, async (req: any, res) => {
     try {
       const org = await storage.getOrganizerByUserId(req.user.id);
       if (!org) return res.status(404).json({ message: "Organizer not found" });
-      const { brandName, logoUrl } = req.body;
+      const { brandName, logoUrl, phone } = req.body;
       await db.update(organizers).set({
         brandName: brandName ?? org.brandName,
         logoUrl: logoUrl ?? org.logoUrl,
+        phone: phone ?? org.phone,
         updatedAt: new Date(),
       }).where(eq(organizers.id, org.id));
       res.status(200).json({ message: "Branding updated" });
@@ -1020,9 +1032,11 @@ export async function registerRoutes(
     accountNumber: z.string().min(2),
     routingNumber: z.string().min(2),
     accountType: z.string().optional(),
-    paymentMethod: z.enum(['bank','link','paypal']).optional(),
+    paymentMethod: z.enum(['bank','link','paypal','revolut']).optional(),
     paymentLink: z.string().optional(),
     paypalClientId: z.string().optional(),
+    paymentNumber: z.string().optional(),
+    referenceCode: z.string().optional(),
   });
   const ORG_BANK_LOCK_SCHEMA = api?.organizer?.bank?.lock?.input ?? z.object({ enabled: z.boolean() });
 
