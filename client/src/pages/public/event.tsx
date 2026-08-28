@@ -45,15 +45,6 @@ export default function PublicEvent() {
   const [copied, setCopied] = useState(false);
   const [revolutRef, setRevolutRef] = useState<string>("");
 
-  const generateRevolutRef = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let result = "";
-    for (let i = 0; i < 4; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -179,7 +170,7 @@ export default function PublicEvent() {
         ticketQuantity: formData.qty,
       });
       setBookingId(res.id);
-      setRevolutRef(generateRevolutRef());
+      if (res.paymentReference) setRevolutRef(res.paymentReference);
       setStep(2);
     } catch (err) {
       console.error(err);

@@ -404,10 +404,29 @@ export class DatabaseStorage implements IStorage {
       .set({ remainingCapacity: event.remainingCapacity - booking.ticketQuantity })
       .where(eq(events.id, event.id));
 
-    // 3. Create booking
+    // 3. Generate unique payment reference (4-char alphanumeric)
+    const generatePaymentReference = () => {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let result = "";
+      for (let i = 0; i < 4; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    let paymentReference = generatePaymentReference();
+    // Ensure uniqueness (retry up to 5 times)
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await db.select().from(bookings).where(eq(bookings.paymentReference, paymentReference));
+      if (existing.length === 0) break;
+      paymentReference = generatePaymentReference();
+    }
+
+    // 4. Create booking
     const [newBooking] = await db.insert(bookings).values({
       ...booking,
-      status: 'pending_payment'
+      status: 'pending_payment',
+      paymentReference,
     }).returning();
     return newBooking;
   }

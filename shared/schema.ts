@@ -101,6 +101,7 @@ export const bookings = pgTable("bookings", {
   ticketQuantity: integer("ticket_quantity").notNull(),
   status: text("status").notNull().default("pending_payment"), // 'pending_payment', 'payment_submitted', 'paid', 'cancelled'
   transactionReference: text("transaction_reference"),
+  paymentReference: text("payment_reference"), // Unique 4-char code for Revolut/BOC payments
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   deletedAt: timestamp("deleted_at"),
