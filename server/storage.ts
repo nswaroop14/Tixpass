@@ -19,6 +19,8 @@ import {
   OrganizerApplication,
   InsertOrganizerApplication,
   organizerBankDetails,
+  eventBankDetails,
+  eventBankAudit,
   resendLogs,
 } from "../shared/schema.js";
 import { eq, and, isNull, inArray } from "drizzle-orm";
@@ -64,7 +66,7 @@ export interface IStorage {
   // Organizer Applications
   createOrganizerApplication(app: InsertOrganizerApplication): Promise<OrganizerApplication>;
   listOrganizerApplications(): Promise<OrganizerApplication[]>;
-  approveOrganizerApplication(id: string): Promise<Organizer | undefined>;
+  approveOrganizerApplication(id: string): Promise<{ organizer: Organizer; app: OrganizerApplication } | undefined>;
   rejectOrganizerApplication(id: string, reason?: string): Promise<OrganizerApplication | undefined>;
   saveOrganizerBankDetails(organizerId: string, details: any): Promise<void>;
   getOrganizerBankDetailsByEvent(eventId: string): Promise<any | undefined>;

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage.js";
 import { api } from "../shared/routes.js";
-import { sendTicketsEmail, sendActivationEmail, sendPasswordResetEmail, sendAdminAlert } from "./email.js";
+import { sendTicketsEmail, sendActivationEmail, sendPasswordResetEmail, sendAdminAlert, sendEventBankUpdateEmail } from "./email.js";
 import { sendDailyBookingsReportEmail } from "./email.js";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
@@ -685,7 +685,7 @@ export async function registerRoutes(
       // Send email (AWAIT for serverless/vercel compatibility)
       try {
         const branding = await getOrganizerBranding(event.id);
-        await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
+await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name);
       } catch (err) {
         console.error('Failed to send tickets email after manual creation:', err);
       }
@@ -727,7 +727,7 @@ export async function registerRoutes(
 
       // Send email
       const branding = await getOrganizerBranding(event.id);
-      await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name, branding.logoUrl);
+      await sendTicketsEmail(booking.customerEmail, booking.customerName, event, tickets, branding.name);
 
       // Log the resend action (non-fatal if it fails)
       try {
@@ -816,6 +816,7 @@ export async function registerRoutes(
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const salesByDay: Record<string, number> = {};
       allBookings.forEach(b => {
+        if (!b.booking.createdAt) return;
         const d = new Date(b.booking.createdAt);
         if (d >= thirtyDaysAgo) {
           const key = d.toISOString().split('T')[0];
@@ -992,6 +993,7 @@ export async function registerRoutes(
       for (const { organizer, user } of organizers) {
         const bookings = await storage.getBookingsByOrganizer(organizer.id);
         const dayBookings = bookings.filter(b => {
+          if (!b.booking.createdAt) return false;
           const d = new Date(b.booking.createdAt);
           return d >= prevStart && d <= prevEnd;
         });
