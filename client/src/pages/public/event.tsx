@@ -777,35 +777,6 @@ export default function PublicEvent() {
                   </>
                 )}
 
-                {/* Digital Ticket Preview */}
-                <div className="bg-gray-950 rounded-2xl p-6 text-white text-left max-w-sm mx-auto mb-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center">
-                      <Ticket className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="text-xs font-bold tracking-wide">{(event as any).organizerName || "TixPass"}</span>
-                  </div>
-                  <h3 className="font-bold text-lg mb-3 leading-tight">{event.title}</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{format(new Date(event.eventDate), "EEE · MMM d · h:mm a")}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{event.venue}</span>
-                    </div>
-                    {event.subtitle && (
-                      <div className="flex items-center gap-2 text-gray-300">
-                        <span className="text-xs">💬</span>
-                        <span>Subtitles: {event.subtitle}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{event.ticketTypes}</span>
-                  </div>
-                </div>
 
                 {bank?.paymentMethod !== "revolut" && (
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-6 text-sm text-gray-600">
@@ -860,9 +831,10 @@ export default function PublicEvent() {
                     <div className="pt-2">
                       {step === 1 && !isPaused && !isSoldOut && (
                         <Button
-                          type="submit"
+                          type="button"
                           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-12 text-sm font-semibold gap-2"
                           disabled={createBooking.isPending}
+                          onClick={() => formRef.current?.requestSubmit()}
                         >
                           {createBooking.isPending ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
