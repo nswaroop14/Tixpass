@@ -12,7 +12,7 @@ import {
   useUpdateBranding,
   useOrganizerProfile,
 } from "@/hooks/use-organizer";
-import { Loader2, Lock, Unlock, Mail, Shield, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Lock, Unlock, Mail, Shield, CreditCard, CheckCircle2, AlertCircle, Phone, Image, Edit2 } from "lucide-react";
 import { PageHeader } from "@/components/organizer/page-header";
 
 export default function OrganizerProfile() {
@@ -46,6 +46,8 @@ export default function OrganizerProfile() {
   });
   const [bankLocked, setBankLocked] = useState<boolean>(false);
   const [bankEditMode, setBankEditMode] = useState<boolean>(false);
+  const [brandForm, setBrandForm] = useState({ brandName: "", logoUrl: "", phone: "" });
+  const [brandEditMode, setBrandEditMode] = useState<boolean>(false);
 
   useEffect(() => {
     if (!bank.isLoading && bank.data) {
@@ -63,6 +65,16 @@ export default function OrganizerProfile() {
       }));
     }
   }, [bank.isLoading, bank.data]);
+
+  useEffect(() => {
+    if (!profile.isLoading && profile.data) {
+      setBrandForm({
+        brandName: profile.data.brandName || "",
+        logoUrl: profile.data.logoUrl || "",
+        phone: profile.data.phone || "",
+      });
+    }
+  }, [profile.isLoading, profile.data]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,6 +238,91 @@ export default function OrganizerProfile() {
                 }}
               >
                 {updateReport.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Report Settings"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Branding Section */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-6 pt-5 pb-0">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <Image className="w-4 h-4 text-indigo-500" />
+                  <h3 className="text-sm font-semibold text-gray-900">Branding</h3>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-gray-200 text-gray-600 gap-1.5 text-xs"
+                  onClick={() => setBrandEditMode(!brandEditMode)}
+                >
+                  {brandEditMode ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5" /> Lock
+                    </>
+                  ) : (
+                    <>
+                      <Edit2 className="w-3.5 h-3.5" /> Edit
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mb-4">Customize your brand name, logo, and contact info shown on tickets and emails.</p>
+            </div>
+            <div className="px-6 pb-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Brand Name</Label>
+                <Input
+                  disabled={!brandEditMode}
+                  placeholder="My Events Co."
+                  value={brandForm.brandName}
+                  onChange={(e) => setBrandForm({ ...brandForm, brandName: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Logo URL</Label>
+                <Input
+                  disabled={!brandEditMode}
+                  placeholder="https://example.com/logo.png"
+                  value={brandForm.logoUrl}
+                  onChange={(e) => setBrandForm({ ...brandForm, logoUrl: e.target.value })}
+                  className="h-9"
+                />
+                <p className="text-[11px] text-gray-400">Publicly accessible image URL (PNG/SVG recommended, max 200px height).</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Phone / Mobile</Label>
+                <Input
+                  disabled={!brandEditMode}
+                  placeholder="+357 99 000000"
+                  value={brandForm.phone}
+                  onChange={(e) => setBrandForm({ ...brandForm, phone: e.target.value })}
+                  className="h-9"
+                />
+                <p className="text-[11px] text-gray-400">Shown to customers on payment confirmation for support questions.</p>
+              </div>
+
+              <Button
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                disabled={!brandEditMode || updateBranding.isPending}
+                onClick={async () => {
+                  setError(null);
+                  setSuccess(null);
+                  try {
+                    await updateBranding.mutateAsync({
+                      brandName: brandForm.brandName || undefined,
+                      logoUrl: brandForm.logoUrl || undefined,
+                      phone: brandForm.phone || undefined,
+                    });
+                    setBrandEditMode(false);
+                    setSuccess("Branding saved");
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "Failed to save branding");
+                  }
+                }}
+              >
+                {updateBranding.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Branding"}
               </Button>
             </div>
           </div>

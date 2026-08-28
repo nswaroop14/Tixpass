@@ -347,7 +347,7 @@ export function useUpdateReportSettings() {
 export function useUpdateBranding() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { brandName?: string; logoUrl?: string }) => {
+    mutationFn: async (data: { brandName?: string; logoUrl?: string; phone?: string }) => {
       const token = localStorage.getItem("token");
       const res = await fetch("/api/organizer/branding", {
         method: "POST",
