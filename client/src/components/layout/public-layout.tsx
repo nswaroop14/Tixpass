@@ -35,7 +35,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <img
               src="/tixpass-logo-v2.png"
               alt="TixPass"
-              className="h-8 md:h-9 w-auto group-hover:scale-105 transition-transform"
+              className="h-10 md:h-12 w-auto group-hover:scale-105 transition-transform"
             />
           </Link>
 

@@ -41,7 +41,7 @@ export default function Pricing() {
                 {[
                   "Unlimited attendees per event",
                   "QR ticket generation",
-                  "Entry scanning &amp; verification",
+                  "Entry scanning & Verification",
                   "Digital ticket delivery",
                   "Organizer dashboard",
                   "Email support",
@@ -77,7 +77,7 @@ export default function Pricing() {
                 <ul className="space-y-3 mb-8">
                   {[
                     "Multiple events per month",
-                    "All Per Event features",
+                    "All Event features",
                     "Priority support",
                     "Advanced analytics",
                     "Custom branding",
