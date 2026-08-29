@@ -38,5 +38,5 @@ export default function TicketLink() {
     );
   }
 
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div style={{ display: "flex", justifyContent: "center", background: "#f0f0f3", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
