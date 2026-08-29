@@ -45,6 +45,8 @@ export default function PublicEvent() {
   const [copied, setCopied] = useState(false);
   const [revolutRef, setRevolutRef] = useState<string>("");
 
+  const eventId = event?.id;
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
