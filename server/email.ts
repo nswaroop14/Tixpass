@@ -230,7 +230,7 @@ export async function generateTicketEmailHtml(
 
       <!-- HEADER -->
       <tr><td style="padding:0 0 20px 0;text-align:center;">
-        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">${organizerName || brandName}</div>
+        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">TixPass</div>
       </td></tr>
 
       <!-- CONFIRMATION BANNER -->
@@ -431,10 +431,13 @@ export async function sendTicketsEmail(
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
 
-  if (bannerUrl.startsWith('data:')) {
+  if (bannerUrl.startsWith('http')) {
     posterHtml = `<img src="${bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
-  } else if (bannerUrl.startsWith('http')) {
-    posterHtml = `<img src="${bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
+  } else if (bannerUrl.startsWith('data:')) {
+    // Check if data URL is small enough for email (< 200KB)
+    if (bannerUrl.length < 300000) {
+      posterHtml = `<img src="${bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
+    }
   }
 
   if (!posterHtml) {
@@ -446,7 +449,7 @@ export async function sendTicketsEmail(
 
   try {
     const result = await resend.emails.send({
-      from: `"${organizerName || brandName}" <${FROM_EMAIL}>`,
+      from: `TixPass <${FROM_EMAIL}>`,
       to: customerEmail,
       subject: `🎬 Booking Confirmed — ${event.title} | TixPass`,
       html: `
@@ -460,7 +463,7 @@ export async function sendTicketsEmail(
 
       <!-- HEADER -->
       <tr><td style="padding:0 0 20px 0;text-align:center;">
-        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">${organizerName || brandName}</div>
+        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">TixPass</div>
       </td></tr>
 
       <!-- CONFIRMATION BANNER -->
