@@ -14,7 +14,7 @@ import {
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
 import { formatEventDateTime, parseWallClock } from "@/lib/date-utils";
-import { downloadTicketPdf } from "@/lib/ticket-pdf";
+import { downloadTicketPdf, generateWhatsAppTicketPdf } from "@/lib/ticket-pdf";
 import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -197,7 +197,15 @@ export default function OrganizerBookings() {
     try {
       const phone = row.booking.customerPhone?.replace(/\D/g, '') || '';
       const filename = `TixPass-Ticket-${row.booking.id}.pdf`;
-      await downloadTicketPdf(row.booking.id, filename);
+      const blob = await generateWhatsAppTicketPdf(row.booking.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       if (phone) {
         const ticketCode = row.booking.id.slice(0, 8).toUpperCase();
         const msg = encodeURIComponent(

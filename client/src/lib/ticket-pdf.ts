@@ -25,8 +25,7 @@ function waitForImages(el: HTMLElement): Promise<void> {
   });
 }
 
-export async function generateTicketPdf(bookingId: string): Promise<Blob> {
-  const htmlUrl = `${getAppOrigin()}/api/public/bookings/${bookingId}/ticket-pdf-html`;
+async function renderPdfFromUrl(htmlUrl: string, bookingId: string): Promise<Blob> {
   const res = await fetch(htmlUrl);
   if (!res.ok) throw new Error("Failed to fetch ticket HTML");
   const html = await res.text();
@@ -87,6 +86,20 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
   document.body.removeChild(iframe);
 
   return pdfBlob;
+}
+
+export async function generateTicketPdf(bookingId: string): Promise<Blob> {
+  return renderPdfFromUrl(
+    `${getAppOrigin()}/api/public/bookings/${bookingId}/ticket-pdf-html`,
+    bookingId
+  );
+}
+
+export async function generateWhatsAppTicketPdf(bookingId: string): Promise<Blob> {
+  return renderPdfFromUrl(
+    `${getAppOrigin()}/api/public/bookings/${bookingId}/whatsapp-ticket-html`,
+    bookingId
+  );
 }
 
 export async function downloadTicketPdf(bookingId: string, filename?: string): Promise<void> {
