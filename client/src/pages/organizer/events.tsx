@@ -84,6 +84,9 @@ export default function OrganizerEvents() {
       result = result.filter((e: any) => e.status === "active");
     } else if (activeTab === "paused") {
       result = result.filter((e: any) => e.status === "paused" && parseWallClock(e.eventDate) >= now);
+    } else if (activeTab === "all") {
+      // "All Events" tab shows only active events
+      result = result.filter((e: any) => e.status === "active");
     } else if (activeTab !== "all") {
       result = result.filter((e: any) => e.status === activeTab);
     }
