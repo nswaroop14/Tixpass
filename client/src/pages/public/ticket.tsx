@@ -214,7 +214,7 @@ export default function PublicTicket() {
               onClick={() => {
                 const ticketUrl = `${window.location.origin}/t/${ticket.uniqueTicketCode}`;
                 const msg = encodeURIComponent(
-                  `Your TixPass ticket is confirmed!\n\n` +
+                  `Your ticket is confirmed!\n\n` +
                   `${event.title}\n` +
                   `View your ticket:\n${ticketUrl}\n\n` +
                   `Please show the QR code at the entrance.`

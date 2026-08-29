@@ -201,7 +201,7 @@ export default function OrganizerBookings() {
       const { ticketCode } = await res.json();
       const ticketUrl = `${window.location.origin}/t/${ticketCode}`;
       const msg = encodeURIComponent(
-        `Your TixPass ticket is confirmed!\n\n` +
+        `Your ticket is confirmed!\n\n` +
         `${row.event.title}\n` +
         `${formatEventDateTime(row.event.eventDate)}\n` +
         `${row.event.venue}\n\n` +
