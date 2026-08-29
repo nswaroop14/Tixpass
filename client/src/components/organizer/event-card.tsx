@@ -28,7 +28,7 @@ interface EventCardProps {
   onEdit: (event: any) => void;
   onDelete: (id: string) => void;
   onToggleStatus: (event: any) => void;
-  onCopyLink: (id: string) => void;
+  onCopyLink: (event: any) => void;
   copiedId: string | null;
 }
 
