@@ -614,7 +614,7 @@ export async function generateTicketPdfHtml(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page { margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { width: 480px; background: #ffffff; font-family: Arial, Helvetica, sans-serif; color: #18181b; }
 </style>

@@ -46,15 +46,23 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
   }
 
   iframeDoc.open();
-  iframeDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${html}</body></html>`);
+  iframeDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;">${html}</body></html>`);
   iframeDoc.close();
 
   await new Promise((r) => setTimeout(r, 500));
   await waitForImages(iframeDoc.body);
   await new Promise((r) => setTimeout(r, 300));
 
+  const contentWidth = iframeDoc.body.scrollWidth || iframeDoc.body.offsetWidth || 480;
+  const contentHeight = iframeDoc.body.scrollHeight || iframeDoc.body.offsetHeight;
+
+  const MARGIN = 6;
+  const pxToMm = 0.264583;
+  const pageWidthMm = Math.ceil(contentWidth * pxToMm) + MARGIN * 2;
+  const pageHeightMm = Math.ceil(contentHeight * pxToMm) + MARGIN * 2;
+
   const opt = {
-    margin: 0,
+    margin: MARGIN,
     filename: `TixPass-Ticket-${bookingId}.pdf`,
     image: { type: "jpeg", quality: 0.98 },
     html2canvas: {
@@ -63,12 +71,12 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
       allowTaint: true,
       backgroundColor: "#ffffff",
       logging: false,
-      width: 480,
-      windowWidth: 480,
+      width: contentWidth,
+      windowWidth: contentWidth,
     },
     jsPDF: {
       unit: "mm",
-      format: "a4",
+      format: [pageWidthMm, pageHeightMm],
       orientation: "portrait" as const,
     },
     pagebreak: { mode: ["avoid-all", "css", "legacy"] },
