@@ -26,7 +26,7 @@ export default function Contact() {
     if (!validate()) return;
     setLoading(true);
     // UI-only "submission": use mailto link to open email composer
-    const mailto = `mailto:nnbabu13@gmail.com?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(
+    const mailto = `mailto:svantech0@gmail.com?subject=${encodeURIComponent(form.subject)}&body=${encodeURIComponent(
       `From: ${form.name} <${form.email}>\n\n${form.message}`
     )}`;
     // simulate async state before opening

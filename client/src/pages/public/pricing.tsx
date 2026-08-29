@@ -11,7 +11,7 @@ export default function Pricing() {
         <p className="text-muted-foreground mb-8">Choose the plan that fits your events.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="p-6">
-            <h2 className="text-2xl font-bold">EUR 30 per event</h2>
+            <h2 className="text-2xl font-bold">€50 per event</h2>
             <p className="text-muted-foreground mt-1">Pay-per-event model</p>
             <ul className="mt-4 space-y-2 text-sm">
               <li>• Unlimited attendees per event</li>
@@ -23,7 +23,7 @@ export default function Pricing() {
             </Link>
           </Card>
           <Card className="p-6">
-            <h2 className="text-2xl font-bold">EUR 50 per month</h2>
+            <h2 className="text-2xl font-bold">€199 per month</h2>
             <p className="text-muted-foreground mt-1">Subscription model</p>
             <ul className="mt-4 space-y-2 text-sm">
               <li>• Multiple events per month</li>
