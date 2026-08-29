@@ -199,14 +199,14 @@ export default function OrganizerBookings() {
       const filename = `TixPass-Ticket-${row.booking.id}.pdf`;
       await downloadTicketPdf(row.booking.id, filename);
       if (phone) {
+        const ticketCode = row.booking.id.slice(0, 8).toUpperCase();
         const msg = encodeURIComponent(
-          `🎫 *TICKET CONFIRMED*\n\n` +
-          `*Event:* ${row.event.title}\n` +
-          `*Date:* ${formatEventDateTime(row.event.eventDate)}\n` +
-          `*Venue:* ${row.event.venue}\n` +
-          `*Qty:* ${row.booking.ticketQuantity}\n` +
-          `*Booking ID:* ${row.booking.id}\n\n` +
-          `Please find your ticket PDF attached. Show the QR code at the entrance.`
+          `Your TixPass ticket is confirmed!\n\n` +
+          `${row.event.title}\n` +
+          `${formatEventDateTime(row.event.eventDate)}\n` +
+          `${row.event.venue}\n\n` +
+          `Please show the QR code at the entrance.\n\n` +
+          `Booking ID: ${ticketCode}`
         );
         window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
         toast({ title: "PDF downloaded", description: "Attach the downloaded PDF in the WhatsApp chat." });

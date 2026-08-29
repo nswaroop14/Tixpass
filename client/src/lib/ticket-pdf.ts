@@ -25,72 +25,8 @@ function waitForImages(el: HTMLElement): Promise<void> {
   });
 }
 
-function optimizeForPdf(doc: Document) {
-  const body = doc.body;
-  if (!body) return;
-
-  const outerTable = body.querySelector("table");
-  if (outerTable) {
-    const outerTd = outerTable.querySelector(":scope > tbody > tr > td, :scope > tr > td");
-    if (outerTd) {
-      outerTd.style.padding = "10px 12px 14px 12px";
-    }
-  }
-
-  const allImgs = Array.from(doc.querySelectorAll("img"));
-  for (const img of allImgs) {
-    const alt = img.getAttribute("alt") || "";
-    if (alt === "QR Code") {
-      (img as HTMLImageElement).style.width = "150px";
-      (img as HTMLImageElement).style.height = "150px";
-    } else if (alt === "TixPass" || alt === "Indian Cinema Connects") {
-      // Keep logos at original size
-    } else if (img.hasAttribute("width")) {
-      (img as HTMLImageElement).style.maxHeight = "180px";
-      (img as HTMLImageElement).style.objectFit = "cover";
-    }
-  }
-
-  const allTables = Array.from(doc.querySelectorAll("table"));
-  for (const table of allTables) {
-    const style = table.getAttribute("style") || "";
-    if (style.includes("border-radius:16px") || style.includes("border-radius: 16px")) {
-      table.style.breakInside = "avoid";
-      table.style.pageBreakInside = "avoid";
-    }
-  }
-
-  const infoTables = Array.from(doc.querySelectorAll("table"));
-  for (const table of infoTables) {
-    const style = table.getAttribute("style") || "";
-    if (style.includes("border-radius:12px") || style.includes("border-radius: 12px")) {
-      const tds = Array.from(table.querySelectorAll("td"));
-      for (const td of tds) {
-        const tdStyle = td.getAttribute("style") || "";
-        if (tdStyle.includes("padding:14px")) {
-          td.setAttribute("style", tdStyle.replace(/padding:\s*14px/g, "padding:10px"));
-        }
-      }
-    }
-  }
-
-  const perfDividers = Array.from(doc.querySelectorAll("table"));
-  for (const table of perfDividers) {
-    const style = table.getAttribute("style") || "";
-    if (style.includes("border-top:2px dashed")) {
-      const cells = Array.from(table.querySelectorAll("td"));
-      for (const td of cells) {
-        const s = td.getAttribute("style") || "";
-        if (s.includes("padding-top:6px")) {
-          td.setAttribute("style", s.replace(/padding-top:\s*6px/g, "padding-top:4px"));
-        }
-      }
-    }
-  }
-}
-
 export async function generateTicketPdf(bookingId: string): Promise<Blob> {
-  const htmlUrl = `${getAppOrigin()}/api/public/bookings/${bookingId}/ticket-html`;
+  const htmlUrl = `${getAppOrigin()}/api/public/bookings/${bookingId}/ticket-pdf-html`;
   const res = await fetch(htmlUrl);
   if (!res.ok) throw new Error("Failed to fetch ticket HTML");
   const html = await res.text();
@@ -99,7 +35,7 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
   iframe.style.position = "fixed";
   iframe.style.left = "-9999px";
   iframe.style.top = "0";
-  iframe.style.width = "520px";
+  iframe.style.width = "320px";
   iframe.style.border = "none";
   document.body.appendChild(iframe);
 
@@ -110,28 +46,11 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
   }
 
   iframeDoc.open();
-  iframeDoc.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { width: 520px; background: #f0f0f3; }
-        img { max-width: 100%; height: auto; }
-        @page { size: A5 portrait; margin: 0; }
-      </style>
-    </head>
-    <body>${html}</body>
-    </html>
-  `);
+  iframeDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${html}</body></html>`);
   iframeDoc.close();
 
   await new Promise((r) => setTimeout(r, 500));
   await waitForImages(iframeDoc.body);
-
-  optimizeForPdf(iframeDoc);
-
   await new Promise((r) => setTimeout(r, 300));
 
   const opt = {
@@ -142,10 +61,10 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
       scale: 2,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: "#f0f0f3",
+      backgroundColor: "#ffffff",
       logging: false,
-      width: 520,
-      windowWidth: 520,
+      width: 320,
+      windowWidth: 320,
     },
     jsPDF: {
       unit: "mm",

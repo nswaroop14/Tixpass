@@ -2,7 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage.js";
 import { api } from "../shared/routes.js";
-import { sendTicketsEmail, sendActivationEmail, sendPasswordResetEmail, sendAdminAlert, sendEventBankUpdateEmail, generateTicketEmailHtml } from "./email.js";
+import { sendTicketsEmail, sendActivationEmail, sendPasswordResetEmail, sendAdminAlert, sendEventBankUpdateEmail, generateTicketEmailHtml, generateTicketPdfHtml } from "./email.js";
 import { sendDailyBookingsReportEmail } from "./email.js";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
@@ -1255,6 +1255,27 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       res.status(200).send(html);
     } catch (err) {
       console.error("Error generating ticket HTML:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/public/bookings/:id/ticket-pdf-html", async (req, res) => {
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+      const event = await storage.getEvent(booking.eventId);
+      if (!event) return res.status(404).json({ message: "Event not found" });
+
+      const tickets = await storage.getTicketsByBooking(booking.id);
+      if (tickets.length === 0) return res.status(404).json({ message: "No tickets found" });
+
+      const html = await generateTicketPdfHtml(event, tickets, booking.customerName);
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.status(200).send(html);
+    } catch (err) {
+      console.error("Error generating ticket PDF HTML:", err);
       res.status(500).json({ message: "Internal server error" });
     }
   });

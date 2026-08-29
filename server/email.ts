@@ -553,3 +553,181 @@ export async function sendDailyBookingsReportEmail(toEmail: string, organizerNam
     console.error('❌ Failed to send daily report email:', error);
   }
 }
+
+export async function generateTicketPdfHtml(
+  event: Event,
+  tickets: Ticket[],
+  customerName?: string
+): Promise<string> {
+  const ticketCount = tickets.length;
+  const ticketPrice = event.ticketPrice / 100;
+  const totalPrice = ticketPrice * ticketCount;
+  const { dateStr, timeStr } = formatWallClockDateParts(event.eventDate);
+  const ticketCode = tickets.length > 0 ? tickets[0].uniqueTicketCode : "";
+
+  let headerLogoDataUrl = '';
+  try {
+    const logoPath = path.join(process.cwd(), 'cinema-connects-logo.jpeg');
+    if (fs.existsSync(logoPath)) {
+      const buf = fs.readFileSync(logoPath);
+      headerLogoDataUrl = `data:image/jpeg;base64,${buf.toString('base64')}`;
+    }
+  } catch {}
+
+  let footerLogoDataUrl = '';
+  try {
+    const logoPath = path.join(process.cwd(), 'Tixpass logo.png');
+    if (fs.existsSync(logoPath)) {
+      const buf = fs.readFileSync(logoPath);
+      footerLogoDataUrl = `data:image/png;base64,${buf.toString('base64')}`;
+    }
+  } catch {}
+
+  const qrDataUrl = await QRCode.toDataURL(ticketCode, {
+    width: 240,
+    margin: 1,
+    color: { dark: '#18181b', light: '#ffffff' },
+  });
+
+  let posterHtml = '';
+  const bannerUrl = event.bannerUrl || '';
+  if (bannerUrl.startsWith('data:')) {
+    posterHtml = `<img src="${bannerUrl}" alt="" style="width:64px;height:80px;object-fit:cover;border-radius:6px;display:block;" />`;
+  } else if (bannerUrl.startsWith('http')) {
+    posterHtml = `<img src="${bannerUrl}" alt="" style="width:64px;height:80px;object-fit:cover;border-radius:6px;display:block;" />`;
+  } else {
+    posterHtml = `<div style="width:64px;height:80px;background:linear-gradient(135deg,#1e1b4b,#6d28d9);border-radius:6px;"></div>`;
+  }
+
+  const notesHtml = event.notes ? `
+  <div style="margin-top:10px;padding:8px 10px;background:#fefce8;border-radius:6px;border:1px solid #fef08a;">
+    <div style="font-size:8px;font-weight:700;color:#a16207;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Important Information</div>
+    ${event.notes.split("\n").filter((n: string) => n.trim()).map((note: string) =>
+      `<div style="font-size:8px;color:#713f12;line-height:1.5;padding:1px 0;">&#8226; ${note.trim()}</div>`
+    ).join('')}
+  </div>` : '';
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @page { size: A5 portrait; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 320px; background: #ffffff; font-family: Arial, Helvetica, sans-serif; color: #18181b; }
+</style>
+</head>
+<body>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="320" style="background:#ffffff;">
+
+  <!-- HEADER -->
+  <tr><td style="padding:14px 16px 6px;text-align:center;">
+    ${headerLogoDataUrl ? `<img src="${headerLogoDataUrl}" alt="TixPass" width="100" style="display:inline-block;height:auto;" />` : '<div style="font-size:18px;font-weight:800;color:#18181b;">TixPass</div>'}
+    <div style="font-size:10px;font-weight:600;color:#16a34a;letter-spacing:0.5px;text-transform:uppercase;margin-top:4px;">&#10003; Booking Confirmed</div>
+  </td></tr>
+
+  <!-- MOVIE INFO -->
+  <tr><td style="padding:6px 16px;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+      <tr>
+        <td width="64" valign="top" style="padding-right:10px;">${posterHtml}</td>
+        <td valign="top">
+          <div style="font-size:14px;font-weight:800;color:#18181b;line-height:1.25;margin-bottom:3px;">${event.title}</div>
+          <div style="font-size:9px;color:#71717a;font-weight:500;">${event.ticketTypes}</div>
+          ${event.language ? `<div style="font-size:9px;color:#71717a;margin-top:2px;">${event.language}${event.subtitle ? ` · ${event.subtitle}` : ''}</div>` : ''}
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- SHOW DETAILS -->
+  <tr><td style="padding:6px 16px;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:8px;">
+      <tr>
+        <td width="50%" style="padding:8px 8px 8px 10px;border-right:1px solid #e5e7eb;">
+          <div style="font-size:7px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">Date</div>
+          <div style="font-size:10px;font-weight:700;color:#18181b;">${dateStr}</div>
+        </td>
+        <td width="50%" style="padding:8px 10px 8px 8px;">
+          <div style="font-size:7px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">Time</div>
+          <div style="font-size:10px;font-weight:700;color:#18181b;">${timeStr}</div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="padding:4px 10px 8px;border-top:1px solid #e5e7eb;">
+          <div style="font-size:7px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">Venue</div>
+          <div style="font-size:10px;font-weight:700;color:#18181b;">${event.venue}</div>
+          ${event.screen ? `<div style="font-size:8px;color:#71717a;margin-top:1px;">Screen ${event.screen}</div>` : ''}
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- TICKET COUNT -->
+  <tr><td style="padding:6px 16px 4px;text-align:center;">
+    <div style="font-size:10px;font-weight:700;color:#18181b;">${ticketCount} ${ticketCount === 1 ? 'Ticket' : 'Tickets'}</div>
+  </td></tr>
+
+  <!-- DIVIDER -->
+  <tr><td style="padding:4px 12px;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+      <tr>
+        <td style="border-top:1.5px dashed #d4d4d8;"></td>
+        <td style="width:16px;text-align:center;font-size:8px;color:#d4d4d8;vertical-align:top;padding-top:3px;">&#9679; &#9679;</td>
+        <td style="border-top:1.5px dashed #d4d4d8;"></td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- QR CODE -->
+  <tr><td style="padding:10px 16px;text-align:center;">
+    <div style="font-size:8px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Scan at Entrance</div>
+    <div style="display:inline-block;padding:10px;background:#ffffff;border:1.5px solid #e5e7eb;border-radius:12px;">
+      <img src="${qrDataUrl}" alt="QR Code" width="160" height="160" style="display:block;width:160px;height:160px;" />
+    </div>
+    <div style="margin-top:6px;">
+      <div style="font-size:7px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;">Booking ID</div>
+      <div style="font-size:13px;font-weight:800;color:#18181b;letter-spacing:1.5px;font-family:'Courier New',monospace;margin-top:1px;">${ticketCode}</div>
+    </div>
+  </td></tr>
+
+  <!-- DIVIDER -->
+  <tr><td style="padding:0 12px;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+      <tr>
+        <td style="border-top:1.5px dashed #d4d4d8;"></td>
+        <td style="width:16px;text-align:center;font-size:8px;color:#d4d4d8;vertical-align:top;padding-top:3px;">&#9679; &#9679;</td>
+        <td style="border-top:1.5px dashed #d4d4d8;"></td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- PRICE -->
+  <tr><td style="padding:8px 16px;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+      <tr><td style="padding:2px 0;font-size:9px;color:#52525b;">Ticket(s) (${ticketCount} × €${ticketPrice.toFixed(2)})</td><td style="text-align:right;padding:2px 0;font-size:9px;color:#52525b;">€${totalPrice.toFixed(2)}</td></tr>
+      <tr><td style="padding:2px 0;font-size:9px;color:#52525b;">Convenience Fee</td><td style="text-align:right;padding:2px 0;font-size:9px;color:#52525b;">€0.00</td></tr>
+      <tr><td style="padding:2px 0;font-size:9px;color:#52525b;">Discount</td><td style="text-align:right;padding:2px 0;font-size:9px;color:#52525b;">- €0.00</td></tr>
+      <tr><td colspan="2" style="padding:4px 0;"><div style="border-top:1px solid #e5e7eb;"></div></td></tr>
+      <tr><td style="padding:2px 0;font-size:10px;font-weight:700;color:#18181b;">Total Amount</td><td style="text-align:right;padding:2px 0;font-size:12px;font-weight:800;color:#6d28d9;">€${totalPrice.toFixed(2)}</td></tr>
+    </table>
+    <div style="text-align:center;margin-top:6px;">
+      <span style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:2px 10px;font-size:9px;font-weight:700;color:#16a34a;">&#10003; PAID</span>
+    </div>
+  </td></tr>
+
+  ${notesHtml}
+
+  <!-- FOOTER -->
+  <tr><td style="padding:12px 16px 14px;text-align:center;">
+    ${footerLogoDataUrl ? `<img src="${footerLogoDataUrl}" alt="TixPass" width="80" style="display:inline-block;height:auto;" />` : '<div style="font-size:12px;font-weight:800;color:#18181b;">TixPass</div>'}
+    <div style="font-size:7px;color:#a1a1aa;margin-top:3px;font-style:italic;">Your ticket. Your experience.</div>
+    <div style="font-size:7px;color:#d4d4d8;margin-top:3px;">&copy; ${new Date().getFullYear()} TixPass</div>
+  </td></tr>
+
+</table>
+</body>
+</html>`;
+}
