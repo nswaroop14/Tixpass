@@ -787,7 +787,7 @@ export async function generateTicketWhatsAppHtml(
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 380px; background: #f0f0f3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #18181b; }
+  body { width: 380px; margin: 0 auto; background: #f0f0f3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #18181b; }
   @page { margin: 0; }
 </style>
 </head>
