@@ -906,7 +906,7 @@ export async function generateTicketWhatsAppHtml(
 
   <!-- DARK FOOTER -->
   <tr><td style="padding:18px 24px 20px;background:#1e1b4b;border-radius:0 0 20px 20px;text-align:center;">
-    <div style="margin-bottom:6px;">${footerLogoDataUrl ? `<img src="${footerLogoDataUrl}" alt="TixPass" width="120" height="120" style="display:inline-block;border-radius:12px;" />` : ''}</div>
+    <div style="margin-bottom:6px;">${footerLogoDataUrl ? `<img src="${footerLogoDataUrl}" alt="TixPass" width="140" height="120" style="display:inline-block;border-radius:12px;" />` : ''}</div>
     <div style="font-size:12px;color:#a1a1aa;font-style:italic;">Your ticket. Your experience.</div>
   </td></tr>
 
