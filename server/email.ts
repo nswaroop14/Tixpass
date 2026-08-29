@@ -113,16 +113,25 @@ export async function sendPasswordResetEmail(toEmail: string, organizerName: str
 }
 
 // Parse ISO string (with or without Z) as wall-clock time (server-side)
-function parseWallClock(isoString: string): { year: number; month: number; day: number; hour: number; minute: number } {
-  const clean = isoString.replace('Z', '').split('T');
+function parseWallClock(input: string | Date): { year: number; month: number; day: number; hour: number; minute: number } {
+  if (input instanceof Date) {
+    return {
+      year: input.getFullYear(),
+      month: input.getMonth() + 1,
+      day: input.getDate(),
+      hour: input.getHours(),
+      minute: input.getMinutes(),
+    };
+  }
+  const clean = input.replace('Z', '').split('T');
   const [year, month, day] = clean[0].split('-').map(Number);
   const [hour = 0, minute = 0] = clean[1]?.split(':').map(Number) || [];
   return { year, month, day, hour, minute };
 }
 
 // Format wall-clock time for email (no timezone conversion)
-function formatWallClockDate(isoString: string): string {
-  const { year, month, day, hour, minute } = parseWallClock(isoString);
+function formatWallClockDate(input: string | Date): string {
+  const { year, month, day, hour, minute } = parseWallClock(input);
   const date = new Date(year, month - 1, day, hour, minute);
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -134,8 +143,8 @@ function formatWallClockDate(isoString: string): string {
   }).format(date).replace(',', '').replace(/ (AM|PM)/, ' $1').replace(/(\d{4}) /, '$1 • ');
 }
 
-function formatWallClockDateParts(isoString: string) {
-  const { year, month, day, hour, minute } = parseWallClock(isoString);
+function formatWallClockDateParts(input: string | Date) {
+  const { year, month, day, hour, minute } = parseWallClock(input);
   const date = new Date(year, month - 1, day, hour, minute);
   const dateStr = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
