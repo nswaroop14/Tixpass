@@ -254,7 +254,7 @@ export async function generateTicketEmailHtml(
 
           <!-- EVENT INFO -->
           <tr><td style="padding:24px 28px 0 28px;text-align:center;">
-            <div style="font-size:20px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:6px;">${event.title}</div>
+            <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${event.title}</div>
             <div style="font-size:13px;color:#71717a;font-weight:500;letter-spacing:0.3px;">${event.ticketTypes}</div>
           </td></tr>
 
