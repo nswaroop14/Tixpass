@@ -54,7 +54,7 @@ function Router() {
     <Switch>
       {/* Public Pages */}
       <Route path="/" component={Home} />
-      <Route path="/event/:eventId" component={PublicEvent} />
+      <Route path="/event/:identifier" component={PublicEvent} />
       <Route path="/ticket/:ticketId" component={PublicTicket} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/contact" component={Contact} />

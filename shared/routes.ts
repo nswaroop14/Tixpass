@@ -289,7 +289,7 @@ export const api = {
     events: {
       get: {
         method: 'GET' as const,
-        path: '/api/public/events/:id' as const,
+        path: '/api/public/events/:identifier' as const,
         responses: { 200: z.custom<typeof events.$inferSelect>(), 404: errorSchemas.notFound },
       }
     },

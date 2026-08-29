@@ -2,16 +2,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { z } from "zod";
 
-export function usePublicEvent(id: string) {
+export function usePublicEvent(identifier: string) {
   return useQuery({
-    queryKey: [api.public.events.get.path, id],
+    queryKey: [api.public.events.get.path, identifier],
     queryFn: async () => {
-      const url = buildUrl(api.public.events.get.path, { id });
+      const url = buildUrl(api.public.events.get.path, { identifier });
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch event");
       return res.json();
     },
-    enabled: !!id,
+    enabled: !!identifier,
   });
 }
 

@@ -1,4 +1,5 @@
 import { db } from "./db.js";
+import { generateSlug, makeUniqueSlug } from "../shared/slug.js";
 import { 
   users,
   User,
@@ -44,6 +45,7 @@ export interface IStorage {
   // Events
   getEventsByOrganizer(organizerId: string): Promise<Event[]>;
   getEvent(id: string): Promise<Event | undefined>;
+  getEventBySlug(slug: string): Promise<Event | undefined>;
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event | undefined>;
   deleteEvent(id: string): Promise<void>;
@@ -299,9 +301,20 @@ export class DatabaseStorage implements IStorage {
     return event;
   }
 
+  async getEventBySlug(slug: string): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.slug, slug));
+    return event;
+  }
+
   async createEvent(event: InsertEvent): Promise<Event> {
+    const baseSlug = generateSlug(event.title);
+    const existingEvents = await db.select({ slug: events.slug }).from(events);
+    const existingSlugs = existingEvents.map(e => e.slug).filter(Boolean) as string[];
+    const uniqueSlug = makeUniqueSlug(baseSlug, existingSlugs);
+    
     const [newEvent] = await db.insert(events).values({
       ...event,
+      slug: uniqueSlug,
       remainingCapacity: event.totalCapacity
     }).returning();
     return newEvent;

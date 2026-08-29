@@ -73,6 +73,7 @@ export const events = pgTable("events", {
   id: uuid("id").$defaultFn(() => crypto.randomUUID()).primaryKey(),
   organizerId: uuid("organizer_id").references(() => organizers.id).notNull(),
   title: text("title").notNull(),
+  slug: text("slug").unique(),
   description: text("description").default(""),
   bannerUrl: text("banner_url"),
   language: text("language"),
@@ -147,7 +148,7 @@ export const organizerBankInputSchema = z.object({
   paymentNumber: z.string().optional(),
   referenceCode: z.string().optional(),
 });
-export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true, remainingCapacity: true }).extend({
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true, remainingCapacity: true, slug: true }).extend({
   eventDate: z.coerce.date(),
   ticketPrice: z.coerce.number().int(),
   totalCapacity: z.coerce.number().int().min(1),

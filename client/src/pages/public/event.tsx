@@ -29,10 +29,10 @@ import {
 } from "lucide-react";
 
 export default function PublicEvent() {
-  const [, params] = useRoute("/event/:eventId");
-  const eventId = params?.eventId || "";
+  const [, params] = useRoute("/event/:identifier");
+  const identifier = params?.identifier || "";
 
-  const { data: event, isLoading, error } = usePublicEvent(eventId);
+  const { data: event, isLoading, error } = usePublicEvent(identifier);
   const createBooking = useCreateBooking();
   const submitPayment = useSubmitPayment();
   const confirmPayPal = useConfirmPayPalPayment();

@@ -896,7 +896,15 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
   app.get(api.public.events.get.path, async (req, res) => {
-    const event = await storage.getEvent(req.params.id);
+    const identifier = req.params.identifier;
+    let event;
+    // Check if identifier is a UUID (contains hyphens in UUID format)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    if (isUuid) {
+      event = await storage.getEvent(identifier);
+    } else {
+      event = await storage.getEventBySlug(identifier);
+    }
     if (!event || event.deletedAt) {
       return res.status(404).json({ message: "Event not found" });
     }
