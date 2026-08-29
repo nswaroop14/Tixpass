@@ -926,6 +926,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
   app.get("/api/public/events-list", async (req, res) => {
     try {
       const events = await storage.listActivePublicEvents();
+      res.setHeader("Cache-Control", "no-store");
       res.status(200).json(events);
     } catch (err) {
       console.error("Error listing public events:", err);

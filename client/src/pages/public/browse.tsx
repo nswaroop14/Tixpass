@@ -14,16 +14,21 @@ export default function BrowseEvents() {
     queryKey: ["/api/public/events-list"],
     queryFn: async () => {
       const res = await fetch("/api/public/events-list");
-      if (!res.ok) return [];
-      return res.json();
+      if (!res.ok) {
+        console.error("Failed to fetch events:", res.status);
+        return [];
+      }
+      const data = await res.json();
+      return data;
     },
   });
 
   const filtered = useMemo(() => {
     if (!events) return [];
-    if (!search.trim()) return events;
+    const valid = events.filter(({ event }: any) => event && event.eventDate);
+    if (!search.trim()) return valid;
     const q = search.toLowerCase();
-    return events.filter(
+    return valid.filter(
       ({ event, organizerName }: any) =>
         event.title?.toLowerCase().includes(q) ||
         event.venue?.toLowerCase().includes(q) ||

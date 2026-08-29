@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Ticket, LogIn, Menu, X, ArrowRight, Instagram, Mail } from "lucide-react";
+import { LogIn, Menu, X, ArrowRight, Instagram, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function PublicLayout({ children }: { children: ReactNode }) {
@@ -31,11 +31,12 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Ticket className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-display font-bold text-lg tracking-tight text-gray-900">TixPass</span>
+          <Link href="/" className="flex items-center group">
+            <img
+              src="/tixpass-logo.png"
+              alt="TixPass"
+              className="h-10 w-auto rounded-md group-hover:scale-105 transition-transform"
+            />
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
@@ -119,10 +120,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             {/* Brand */}
             <div className="md:col-span-2">
               <Link href="/" className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center">
-                  <Ticket className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-display font-bold text-lg text-white">TixPass</span>
+                <img src="/tixpass-logo.png" alt="TixPass" className="h-10 w-auto rounded-md" />
               </Link>
               <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-6">
                 The seamless way to discover, book and manage tickets for movies, events and experiences.

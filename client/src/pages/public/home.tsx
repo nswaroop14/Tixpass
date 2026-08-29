@@ -25,7 +25,8 @@ function useActiveEvents() {
     queryFn: async () => {
       const res = await fetch("/api/public/events-list");
       if (!res.ok) return [];
-      return res.json();
+      const data = await res.json();
+      return data;
     },
   });
 }
