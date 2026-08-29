@@ -12,7 +12,7 @@ import {
   useSaveBookingFilterPreferences,
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { formatEventDateTime } from "@/lib/date-utils";
 import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -358,7 +358,8 @@ export default function OrganizerBookings() {
                       </div>
                       <p className="text-xs text-gray-500 truncate mt-0.5">{row.booking.customerEmail}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{row.event.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{format(new Date(row.event.eventDate), "MMM d, yyyy")}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{formatEventDateTime(row.event.eventDate, "MMM d, yyyy")}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Booked: {formatEventDateTime(row.booking.createdAt, "MMM d, yyyy · h:mm a")}</p>
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-600">
@@ -428,18 +429,20 @@ export default function OrganizerBookings() {
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-sm" style={{ tableLayout: "fixed" }}>
               <colgroup>
-                <col style={{ width: "22%" }} />
                 <col style={{ width: "20%" }} />
-                <col style={{ width: "10%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "8%" }} />
                 <col style={{ width: "10%" }} />
                 <col style={{ width: "10%" }} />
                 <col style={{ width: "12%" }} />
-                <col style={{ width: "16%" }} />
+                <col style={{ width: "10%" }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Event</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Booked</th>
                   <th className="text-center px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
                   <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Total</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -463,7 +466,10 @@ export default function OrganizerBookings() {
                     </td>
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-gray-900 line-clamp-1 text-[13px]">{row.event.title}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">{format(new Date(row.event.eventDate), "MMM d, yyyy")}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">{formatEventDateTime(row.event.eventDate, "MMM d, yyyy")}</p>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <p className="text-[11px] text-gray-500">{formatEventDateTime(row.booking.createdAt, "MMM d, yyyy · h:mm a")}</p>
                     </td>
                     <td className="px-5 py-3.5 text-center font-medium text-gray-900">{row.booking.ticketQuantity}</td>
                     <td className="px-5 py-3.5 text-right font-semibold text-gray-900 whitespace-nowrap">
