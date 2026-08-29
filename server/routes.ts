@@ -923,6 +923,15 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       }
     }
   });
+  app.get("/api/public/events-list", async (req, res) => {
+    try {
+      const events = await storage.listActivePublicEvents();
+      res.status(200).json(events);
+    } catch (err) {
+      console.error("Error listing public events:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
   app.get(api.public.events.get.path, async (req, res) => {
     const identifier = req.params.identifier;
     let event;

@@ -44,6 +44,7 @@ export interface IStorage {
 
   // Events
   getEventsByOrganizer(organizerId: string): Promise<Event[]>;
+  listActivePublicEvents(): Promise<{ event: Event; organizerName: string }[]>;
   getEvent(id: string): Promise<Event | undefined>;
   getEventBySlug(slug: string): Promise<Event | undefined>;
   createEvent(event: InsertEvent): Promise<Event>;
@@ -225,6 +226,18 @@ export class DatabaseStorage implements IStorage {
 
   async getEventsByOrganizer(organizerId: string): Promise<Event[]> {
     return await db.select().from(events).where(and(eq(events.organizerId, organizerId), isNull(events.deletedAt)));
+  }
+
+  async listActivePublicEvents(): Promise<{ event: Event; organizerName: string }[]> {
+    const rows = await db
+      .select({ event: events, organizer: organizers })
+      .from(events)
+      .innerJoin(organizers, eq(events.organizerId, organizers.id))
+      .where(and(eq(events.status, "active"), isNull(events.deletedAt)));
+    return rows.map(({ event, organizer }) => ({
+      event,
+      organizerName: organizer.brandName || organizer.name || "TixPass",
+    }));
   }
 
   async saveOrganizerBankDetails(organizerId: string, details: any): Promise<void> {
