@@ -763,8 +763,8 @@ export async function generateTicketWhatsAppHtml(
   let qrDataUrl = '';
   if (ticketCode) {
     try {
-      const qrBuf = await QRCode.toBuffer(ticketCode, { width: 160, margin: 1 });
-      qrDataUrl = `data:image/png;base64,${qrBuf.toString('base64')}`;
+      const appUrl = getAppUrl();
+      qrDataUrl = `${appUrl}/api/public/qr/${encodeURIComponent(ticketCode)}`;
     } catch {}
   }
 

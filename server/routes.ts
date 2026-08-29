@@ -7,6 +7,7 @@ import { sendDailyBookingsReportEmail } from "./email.js";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs"; // Switched to bcryptjs for serverless compatibility
+import QRCode from "qrcode";
 import { db } from "./db.js";
 import { organizers } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
@@ -1276,6 +1277,19 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       res.status(200).send(html);
     } catch (err) {
       console.error("Error generating ticket PDF HTML:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/public/qr/:code", async (req, res) => {
+    try {
+      const code = req.params.code;
+      const buf = await QRCode.toBuffer(code, { width: 200, margin: 1 });
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=31536000");
+      res.status(200).send(buf);
+    } catch (err) {
+      console.error("Error generating QR:", err);
       res.status(500).json({ message: "Internal server error" });
     }
   });
