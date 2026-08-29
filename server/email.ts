@@ -225,7 +225,7 @@ export async function generateTicketEmailHtml(
 
       <!-- HEADER -->
       <tr><td style="padding:0 0 20px 0;text-align:center;">
-        <div style="font-size:28px;font-weight:800;color:#18181b;letter-spacing:-0.5px;">TixPass</div>
+        <img src="${logoRef}" alt="TixPass" width="140" style="display:inline-block;height:auto;max-width:140px;" />
       </td></tr>
 
       <!-- CONFIRMATION BANNER -->
