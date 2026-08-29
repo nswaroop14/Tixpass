@@ -143,7 +143,7 @@ export function EventCard({
           variant="ghost"
           size="sm"
           className="h-8 px-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
-          onClick={() => onCopyLink(event.id)}
+          onClick={() => onCopyLink(event)}
         >
           {copiedId === event.id ? (
             <Check className="w-3.5 h-3.5 text-emerald-500" />

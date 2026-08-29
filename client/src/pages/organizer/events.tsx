@@ -192,10 +192,11 @@ export default function OrganizerEvents() {
     setIsOpen(true);
   };
 
-  const handleCopyLink = (eventId: string) => {
-    const url = `${window.location.origin}/event/${eventId}`;
+  const handleCopyLink = (event: any) => {
+    const identifier = event.slug || event.id;
+    const url = `${window.location.origin}/event/${identifier}`;
     navigator.clipboard.writeText(url);
-    setCopiedId(eventId);
+    setCopiedId(event.id);
     toast({ title: "Link Copied", description: "Public event link copied to clipboard." });
     setTimeout(() => setCopiedId(null), 2000);
   };
