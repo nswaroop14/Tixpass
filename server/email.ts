@@ -200,7 +200,7 @@ export async function generateTicketEmailHtml(
       qrDataUrl = await QRCode.toDataURL(ticketCode, {
         width: 200,
         margin: 1,
-        color: { dark: '#18181b', light: '#ffffff' },
+        color: { dark: '#000000', light: '#ffffff' },
       });
     } catch {}
   }
@@ -584,9 +584,9 @@ export async function generateTicketPdfHtml(
   } catch {}
 
   const qrDataUrl = await QRCode.toDataURL(ticketCode, {
-    width: 240,
+    width: 160,
     margin: 1,
-    color: { dark: '#18181b', light: '#ffffff' },
+    color: { dark: '#000000', light: '#ffffff' },
   });
 
   let posterHtml = '';
@@ -761,9 +761,9 @@ export async function generateTicketWhatsAppHtml(
   } catch {}
 
   const qrDataUrl = await QRCode.toDataURL(ticketCode, {
-    width: 240,
+    width: 160,
     margin: 1,
-    color: { dark: '#18181b', light: '#ffffff' },
+    color: { dark: '#000000', light: '#ffffff' },
   });
 
   let posterHtml = '';
@@ -792,15 +792,7 @@ export async function generateTicketWhatsAppHtml(
 
   <!-- DARK HEADER -->
   <tr><td style="padding:20px 24px 16px;background:#1e1b4b;border-radius:20px 20px 0 0;text-align:center;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr>
-        <td width="36" valign="middle">${headerLogoDataUrl ? `<img src="${headerLogoDataUrl}" alt="" width="36" height="36" style="display:block;border-radius:8px;" />` : ''}</td>
-        <td valign="middle" style="padding-left:8px;">
-          <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Tix</span><span style="font-size:22px;font-weight:800;color:#a78bfa;letter-spacing:-0.5px;">Pass</span>
-        </td>
-        <td></td>
-      </tr>
-    </table>
+    ${headerLogoDataUrl ? `<img src="${headerLogoDataUrl}" alt="Indian Cinema Connects" width="70" height="70" style="display:inline-block;border-radius:50%;" />` : '<div style="font-size:22px;font-weight:800;color:#ffffff;">TixPass</div>'}
   </td></tr>
 
   <!-- WHITE CARD -->
@@ -811,7 +803,11 @@ export async function generateTicketWhatsAppHtml(
       <tr><td style="padding:20px 0 16px;text-align:center;border-bottom:2px dashed #d4d4d8;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
           <tr>
-            <td valign="middle" style="padding-right:8px;"><div style="width:22px;height:22px;background:#16a34a;border-radius:50%;text-align:center;line-height:22px;font-size:13px;color:#fff;font-weight:bold;">&#10003;</div></td>
+            <td valign="middle" style="padding-right:8px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr><td style="width:22px;height:22px;background:#16a34a;border-radius:50%;text-align:center;font-size:13px;color:#fff;font-weight:bold;line-height:22px;">&#10003;</td></tr>
+              </table>
+            </td>
             <td valign="middle"><span style="font-size:16px;font-weight:700;color:#16a34a;letter-spacing:1px;text-transform:uppercase;">Booking Confirmed</span></td>
           </tr>
         </table>
@@ -829,6 +825,8 @@ export async function generateTicketWhatsAppHtml(
             <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128336;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${timeStr}</td></tr>
             <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128205;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${event.venue}</td></tr>
             ${event.screen ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128246;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Screen ${event.screen}</td></tr>` : ''}
+            ${event.language ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Audio: ${event.language}</td></tr>` : ''}
+            ${event.subtitle ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128172;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Subtitles: ${event.subtitle}</td></tr>` : ''}
             <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${event.ticketTypes}</td></tr>
           </table>
         </td>
@@ -886,7 +884,14 @@ export async function generateTicketWhatsAppHtml(
           </tr>
           <tr><td colspan="2" style="padding:0 0 10px;"><div style="border-top:1px solid #d4d4d8;"></div></td></tr>
           <tr>
-            <td><span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#16a34a;"><span style="display:inline-block;width:18px;height:18px;background:#16a34a;border-radius:50%;text-align:center;line-height:18px;font-size:11px;color:#fff;font-weight:bold;">&#10003;</span> PAID</span></td>
+            <td>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td style="width:18px;height:18px;background:#16a34a;border-radius:50%;text-align:center;font-size:11px;color:#fff;font-weight:bold;line-height:18px;">&#10003;</td>
+                  <td style="padding-left:6px;font-size:13px;font-weight:700;color:#16a34a;">PAID</td>
+                </tr>
+              </table>
+            </td>
             <td></td>
           </tr>
         </table>
@@ -897,7 +902,7 @@ export async function generateTicketWhatsAppHtml(
 
   <!-- DARK FOOTER -->
   <tr><td style="padding:18px 24px 20px;background:#1e1b4b;border-radius:0 0 20px 20px;text-align:center;">
-    <div style="margin-bottom:6px;">${footerLogoDataUrl ? `<img src="${footerLogoDataUrl}" alt="TixPass" width="32" height="32" style="display:inline-block;border-radius:6px;" />` : ''}</div>
+    <div style="margin-bottom:6px;">${footerLogoDataUrl ? `<img src="${footerLogoDataUrl}" alt="TixPass" width="50" height="50" style="display:inline-block;border-radius:8px;" />` : ''}</div>
     <div style="font-size:12px;color:#a1a1aa;font-style:italic;">Your ticket. Your experience.</div>
   </td></tr>
 
