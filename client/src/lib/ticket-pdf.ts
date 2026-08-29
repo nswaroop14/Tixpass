@@ -25,7 +25,7 @@ function waitForImages(el: HTMLElement): Promise<void> {
   });
 }
 
-async function renderPdfFromUrl(htmlUrl: string, bookingId: string): Promise<Blob> {
+async function renderPdfFromUrl(htmlUrl: string, bookingId: string, contentWidth: number): Promise<Blob> {
   const res = await fetch(htmlUrl);
   if (!res.ok) throw new Error("Failed to fetch ticket HTML");
   const html = await res.text();
@@ -34,7 +34,7 @@ async function renderPdfFromUrl(htmlUrl: string, bookingId: string): Promise<Blo
   iframe.style.position = "fixed";
   iframe.style.left = "-9999px";
   iframe.style.top = "0";
-  iframe.style.width = "480px";
+  iframe.style.width = contentWidth + "px";
   iframe.style.border = "none";
   document.body.appendChild(iframe);
 
@@ -50,15 +50,15 @@ async function renderPdfFromUrl(htmlUrl: string, bookingId: string): Promise<Blo
 
   await new Promise((r) => setTimeout(r, 500));
   await waitForImages(iframeDoc.body);
-  await new Promise((r) => setTimeout(r, 300));
+  await new Promise((r) => setTimeout(r, 500));
 
-  const contentWidth = iframeDoc.body.scrollWidth || iframeDoc.body.offsetWidth || 480;
-  const contentHeight = iframeDoc.body.scrollHeight || iframeDoc.body.offsetHeight;
+  const measuredWidth = iframeDoc.body.scrollWidth || iframeDoc.body.offsetWidth || contentWidth;
+  const measuredHeight = iframeDoc.body.scrollHeight || iframeDoc.body.offsetHeight;
 
-  const MARGIN = 6;
+  const MARGIN = 5;
   const pxToMm = 0.264583;
-  const pageWidthMm = Math.ceil(contentWidth * pxToMm) + MARGIN * 2;
-  const pageHeightMm = Math.ceil(contentHeight * pxToMm) + MARGIN * 2;
+  const pageWidthMm = Math.ceil(measuredWidth * pxToMm) + MARGIN * 2;
+  const pageHeightMm = Math.ceil(measuredHeight * pxToMm) + MARGIN * 2;
 
   const opt = {
     margin: MARGIN,
@@ -69,9 +69,9 @@ async function renderPdfFromUrl(htmlUrl: string, bookingId: string): Promise<Blo
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
-      logging: false,
-      width: contentWidth,
-      windowWidth: contentWidth,
+      logging: true,
+      width: measuredWidth,
+      windowWidth: measuredWidth,
     },
     jsPDF: {
       unit: "mm",
@@ -91,14 +91,16 @@ async function renderPdfFromUrl(htmlUrl: string, bookingId: string): Promise<Blo
 export async function generateTicketPdf(bookingId: string): Promise<Blob> {
   return renderPdfFromUrl(
     `${getAppOrigin()}/api/public/bookings/${bookingId}/ticket-pdf-html`,
-    bookingId
+    bookingId,
+    480
   );
 }
 
 export async function generateWhatsAppTicketPdf(bookingId: string): Promise<Blob> {
   return renderPdfFromUrl(
     `${getAppOrigin()}/api/public/bookings/${bookingId}/whatsapp-ticket-html`,
-    bookingId
+    bookingId,
+    380
   );
 }
 
