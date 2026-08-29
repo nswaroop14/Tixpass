@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 
 // Pages
 import NotFound from "@/pages/not-found";
+import TicketLink from "@/pages/ticket-link";
 import Home from "./pages/public/home";
 import PublicEvent from "./pages/public/event";
 import PublicTicket from "./pages/public/ticket";
@@ -54,6 +55,7 @@ function Router() {
     <Switch>
       {/* Public Pages */}
       <Route path="/" component={Home} />
+      <Route path="/t/:ticketCode" component={TicketLink} />
       <Route path="/event/:identifier" component={PublicEvent} />
       <Route path="/ticket/:ticketId" component={PublicTicket} />
       <Route path="/pricing" component={Pricing} />

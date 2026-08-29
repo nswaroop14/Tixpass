@@ -1323,15 +1323,15 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  // Short ticket link — /t/:ticketCode
-  app.get("/t/:ticketCode", async (req, res) => {
+  // Short ticket link — server endpoint (called by React route)
+  app.get("/api/public/ticket-link/:ticketCode", async (req, res) => {
     try {
       const { ticket, event } = await storage.getTicketByCodeWithEvent(req.params.ticketCode) || {};
       if (!ticket || !event) return res.status(404).send("Ticket not found");
 
       if (event.status === "paused") {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        return res.status(200).send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event Paused</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f0f3;font-family:-apple-system,BlinkMacSystemFont,sans-serif;"><div style="text-align:center;padding:40px;"><div style="font-size:48px;margin-bottom:16px;">⏸️</div><h1 style="font-size:20px;color:#18181b;margin-bottom:8px;">Event Paused</h1><p style="font-size:14px;color:#71717a;">This event is currently unavailable. Please contact the organizer for more information.</p></div></body></html>`);
+        return res.status(200).send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Event Paused</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f0f3;font-family:-apple-system,BlinkMacSystemFont,sans-serif;"><div style="text-align:center;padding:40px;"><div style="font-size:48px;margin-bottom:16px;">&#9208;&#65039;</div><h1 style="font-size:20px;color:#18181b;margin-bottom:8px;">Event Paused</h1><p style="font-size:14px;color:#71717a;">This event is currently unavailable. Please contact the organizer for more information.</p></div></body></html>`);
       }
 
       const tickets = await storage.getTicketsByBooking(ticket.bookingId);
