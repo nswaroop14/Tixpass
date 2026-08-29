@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { Button } from "@/components/ui/button";
-import { Ticket, Calendar, MapPin, Loader2, Clock, ArrowLeft, Search } from "lucide-react";
+import { Ticket, Calendar, MapPin, Loader2, Clock, ArrowLeft, Search, ArrowRight } from "lucide-react";
 import { formatEventDate, formatEventTime } from "@/lib/date-utils";
 import { useState, useMemo } from "react";
 
