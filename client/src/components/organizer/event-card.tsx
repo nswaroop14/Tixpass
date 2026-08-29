@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { formatEventDateTime } from "@/lib/date-utils";
 import { StatusBadge } from "./status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,7 +87,7 @@ export function EventCard({
         <div className="space-y-1.5 mb-4">
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <Calendar className="w-3.5 h-3.5 text-gray-400" />
-            <span>{format(new Date(event.eventDate), "d MMM yyyy · h:mm a")}</span>
+            <span>{formatEventDateTime(event.eventDate, "d MMM yyyy · h:mm a")}</span>
           </div>
           {event.venue && (
             <div className="flex items-center gap-2 text-xs text-gray-500">

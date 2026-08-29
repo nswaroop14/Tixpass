@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/organizer/page-header";
 import { StatusBadge } from "@/components/organizer/status-badge";
 import { EventCard } from "@/components/organizer/event-card";
 import { EmptyState } from "@/components/organizer/empty-state";
-import { format } from "date-fns";
+import { formatEventDateTime, toDateTimeLocal, parseWallClock } from "@/lib/date-utils";
 import { Plus, Calendar, Loader2, Search, Upload, X, Image, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,7 +62,7 @@ export default function OrganizerEvents() {
       if (e.status === "active") {
         counts["active"] = (counts["active"] || 0) + 1;
       } else if (e.status === "paused") {
-        if (new Date(e.eventDate) < now) {
+        if (parseWallClock(e.eventDate) < now) {
           counts["past"] = (counts["past"] || 0) + 1;
         } else {
           counts["paused"] = (counts["paused"] || 0) + 1;
@@ -79,11 +79,11 @@ export default function OrganizerEvents() {
     const now = new Date();
     let result = events;
     if (activeTab === "past") {
-      result = result.filter((e: any) => e.status === "paused" && new Date(e.eventDate) < now);
+      result = result.filter((e: any) => e.status === "paused" && parseWallClock(e.eventDate) < now);
     } else if (activeTab === "active") {
       result = result.filter((e: any) => e.status === "active");
     } else if (activeTab === "paused") {
-      result = result.filter((e: any) => e.status === "paused" && new Date(e.eventDate) >= now);
+      result = result.filter((e: any) => e.status === "paused" && parseWallClock(e.eventDate) >= now);
     } else if (activeTab !== "all") {
       result = result.filter((e: any) => e.status === activeTab);
     }
@@ -99,12 +99,12 @@ export default function OrganizerEvents() {
     const statusOrder: Record<string, number> = { active: 0, paused: 1, draft: 2 };
     return [...result].sort((a: any, b: any) => {
       if (activeTab === "past") {
-        return new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime();
+        return parseWallClock(b.eventDate).getTime() - parseWallClock(a.eventDate).getTime();
       }
       const sa = statusOrder[a.status] ?? 5;
       const sb = statusOrder[b.status] ?? 5;
       if (sa !== sb) return sa - sb;
-      return new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
+      return parseWallClock(a.eventDate).getTime() - parseWallClock(b.eventDate).getTime();
     });
   }, [events, activeTab, searchQuery]);
 
@@ -116,7 +116,20 @@ export default function OrganizerEvents() {
     }
     const priceFloat = parseFloat(formData.ticketPrice);
     const capacityInt = parseInt(formData.totalCapacity);
-    const eventDateObj = new Date(formData.eventDate);
+    // Validate datetime-local string format: YYYY-MM-DDTHH:mm
+    const dateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+    if (!dateTimeRegex.test(formData.eventDate)) {
+      toast({ title: "Invalid date", description: "Please select a valid event date & time.", variant: "destructive" });
+      return;
+    }
+    const [datePart, timePart] = formData.eventDate.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = timePart.split(':').map(Number);
+    const testDate = new Date(year, month - 1, day, hour, minute);
+    if (isNaN(testDate.getTime())) {
+      toast({ title: "Invalid date", description: "Please select a valid event date & time.", variant: "destructive" });
+      return;
+    }
     if (Number.isNaN(priceFloat) || priceFloat < 0) {
       toast({ title: "Invalid price", description: "Enter a valid ticket price (e.g., 19.99).", variant: "destructive" });
       return;
@@ -125,15 +138,13 @@ export default function OrganizerEvents() {
       toast({ title: "Invalid capacity", description: "Total capacity must be a positive integer.", variant: "destructive" });
       return;
     }
-    if (isNaN(eventDateObj.getTime())) {
-      toast({ title: "Invalid date", description: "Please select a valid event date & time.", variant: "destructive" });
-      return;
-    }
+    // Generate eventDateText from wall-clock time
+    const eventDateText = formatEventDateTime(formData.eventDate, "MMM d, yyyy • h:mm a");
     const data = {
       ...formData,
       notes: notesList.filter(n => n.trim()).join("\n"),
-      eventDate: eventDateObj,
-      eventDateText: format(eventDateObj, "MMM d, yyyy • h:mm a"),
+      eventDate: formData.eventDate,
+      eventDateText,
       ticketPrice: Math.round(priceFloat * 100),
       totalCapacity: capacityInt,
     };
@@ -167,7 +178,7 @@ export default function OrganizerEvents() {
       subtitle: event.subtitle || "",
       screen: event.screen || "",
       venue: event.venue,
-      eventDate: format(new Date(event.eventDate), "yyyy-MM-dd'T'HH:mm"),
+      eventDate: toDateTimeLocal(event.eventDate),
       ticketTypes: event.ticketTypes,
       ticketPrice: (event.ticketPrice / 100).toString(),
       totalCapacity: event.totalCapacity.toString(),

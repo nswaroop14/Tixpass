@@ -2,7 +2,7 @@ import { useRoute } from "wouter";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { usePublicTicket } from "@/hooks/use-public";
 import { QRCodeSVG } from "qrcode.react";
-import { format } from "date-fns";
+import { formatEventDate, formatEventTime } from "@/lib/date-utils";
 import { Calendar, MapPin, Loader2, AlertCircle, User, Check, Ticket } from "lucide-react";
 
 export default function PublicTicket() {
@@ -75,12 +75,12 @@ export default function PublicTicket() {
                 <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
                   <Calendar className="w-4 h-4 text-indigo-500 mx-auto mb-1.5" />
                   <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Date</p>
-                  <p className="text-xs font-bold text-gray-900 leading-tight">{format(new Date(event.eventDate), "EEE, MMM d")}</p>
+                  <p className="text-xs font-bold text-gray-900 leading-tight">{formatEventDate(event.eventDate, "EEE, MMM d")}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
                   <span className="text-xs font-bold text-indigo-500">⏱</span>
                   <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5 mt-1">Time</p>
-                  <p className="text-xs font-bold text-gray-900 leading-tight">{format(new Date(event.eventDate), "h:mm a")}</p>
+                  <p className="text-xs font-bold text-gray-900 leading-tight">{formatEventTime(event.eventDate, "h:mm a")}</p>
                 </div>
                 {event.screen ? (
                   <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">

@@ -112,10 +112,19 @@ export async function sendPasswordResetEmail(toEmail: string, organizerName: str
   }
 }
 
-const formatEventDate = (date: Date, text?: string | null) => {
-  if (text) return text;
+// Parse ISO string (with or without Z) as wall-clock time (server-side)
+function parseWallClock(isoString: string): { year: number; month: number; day: number; hour: number; minute: number } {
+  const clean = isoString.replace('Z', '').split('T');
+  const [year, month, day] = clean[0].split('-').map(Number);
+  const [hour = 0, minute = 0] = clean[1]?.split(':').map(Number) || [];
+  return { year, month, day, hour, minute };
+}
+
+// Format wall-clock time for email (no timezone conversion)
+function formatWallClockDate(isoString: string): string {
+  const { year, month, day, hour, minute } = parseWallClock(isoString);
+  const date = new Date(year, month - 1, day, hour, minute);
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Kolkata',
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -123,24 +132,24 @@ const formatEventDate = (date: Date, text?: string | null) => {
     minute: '2-digit',
     hour12: true,
   }).format(date).replace(',', '').replace(/ (AM|PM)/, ' $1').replace(/(\d{4}) /, '$1 • ');
-};
+}
 
-const formatEventDateParts = (date: Date) => {
+function formatWallClockDateParts(isoString: string) {
+  const { year, month, day, hour, minute } = parseWallClock(isoString);
+  const date = new Date(year, month - 1, day, hour, minute);
   const dateStr = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Kolkata',
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
   }).format(date);
   const timeStr = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Kolkata',
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   }).format(date);
   return { dateStr, timeStr };
-};
+}
 
 function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | null {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -167,7 +176,7 @@ export async function sendTicketsEmail(
   const ticketCount = tickets.length;
   const ticketPrice = event.ticketPrice / 100;
   const totalPrice = ticketPrice * ticketCount;
-  const { dateStr, timeStr } = formatEventDateParts(new Date(event.eventDate));
+  const { dateStr, timeStr } = formatWallClockDateParts(event.eventDate);
 
   const customerGreeting = customerName ? `Hi ${customerName},` : "Hi there,";
 

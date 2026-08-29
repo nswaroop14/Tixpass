@@ -6,7 +6,7 @@ import { api, buildUrl } from "@shared/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { formatEventDate, formatEventTime, formatEventDateTime } from "@/lib/date-utils";
 import {
   Calendar,
   MapPin,
@@ -263,7 +263,7 @@ export default function PublicEvent() {
             <div className="flex flex-wrap gap-2 md:gap-3">
               <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs md:text-sm border border-white/10">
                 <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                {format(new Date(event.eventDate), "EEE, MMM d · h:mm a")}
+{formatEventDateTime(event.eventDate, "EEE, MMM d · h:mm a")}
               </span>
               <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs md:text-sm border border-white/10">
                 <MapPin className="w-3.5 h-3.5 text-indigo-400" />
@@ -461,7 +461,7 @@ export default function PublicEvent() {
                     </div>
                     <div>
                       <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-1">Date & Time</p>
-                      <p className="text-sm font-medium text-gray-900">{format(new Date(event.eventDate), "MMM d, yyyy · h:mm a")}</p>
+                      <p className="text-sm font-medium text-gray-900">{formatEventDateTime(event.eventDate, "MMM d, yyyy · h:mm a")}</p>
                     </div>
                     {event.language && (
                       <div>
@@ -799,7 +799,7 @@ export default function PublicEvent() {
                     <div className="space-y-2 text-xs text-gray-500">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{format(new Date(event.eventDate), "EEE, MMM d · h:mm a")}</span>
+                        <span>{formatEventDateTime(event.eventDate, "EEE, MMM d · h:mm a")}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-3.5 h-3.5 text-gray-400" />
