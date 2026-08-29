@@ -12,7 +12,7 @@ import {
   useSaveBookingFilterPreferences,
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
-import { formatEventDateTime } from "@/lib/date-utils";
+import { formatEventDateTime, parseWallClock } from "@/lib/date-utils";
 import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
