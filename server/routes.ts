@@ -1249,7 +1249,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       if (tickets.length === 0) return res.status(404).json({ message: "No tickets found" });
 
       const org = await storage.getOrganizerById(event.organizerId);
-      const html = generateTicketEmailHtml(event, tickets, booking.customerName, org?.brandName || org?.name, { useDataUrls: true });
+      const html = await generateTicketEmailHtml(event, tickets, booking.customerName, org?.brandName || org?.name, { useDataUrls: true });
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.status(200).send(html);

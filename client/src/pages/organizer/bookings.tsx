@@ -14,7 +14,7 @@ import {
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
 import { formatEventDateTime, parseWallClock } from "@/lib/date-utils";
-import { shareTicketPdf } from "@/lib/ticket-pdf";
+import { downloadTicketPdf } from "@/lib/ticket-pdf";
 import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -196,11 +196,20 @@ export default function OrganizerBookings() {
     setWhatsAppSending(true);
     try {
       const phone = row.booking.customerPhone?.replace(/\D/g, '') || '';
-      const success = await shareTicketPdf(row.booking.id, row.event.title);
-      if (!success && phone) {
-        const phoneMsg = encodeURIComponent(`Your ticket for ${row.event.title} is confirmed!\n\nPlease check your email for the ticket PDF.`);
-        window.open(`https://wa.me/${phone}?text=${phoneMsg}`, "_blank");
-        toast({ title: "PDF downloaded", description: "Ticket PDF downloaded. Attach it in the WhatsApp chat." });
+      const filename = `TixPass-Ticket-${row.booking.id}.pdf`;
+      await downloadTicketPdf(row.booking.id, filename);
+      if (phone) {
+        const msg = encodeURIComponent(
+          `🎫 *TICKET CONFIRMED*\n\n` +
+          `*Event:* ${row.event.title}\n` +
+          `*Date:* ${formatEventDateTime(row.event.eventDate)}\n` +
+          `*Venue:* ${row.event.venue}\n` +
+          `*Qty:* ${row.booking.ticketQuantity}\n` +
+          `*Booking ID:* ${row.booking.id}\n\n` +
+          `Please find your ticket PDF attached. Show the QR code at the entrance.`
+        );
+        window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+        toast({ title: "PDF downloaded", description: "Attach the downloaded PDF in the WhatsApp chat." });
       }
     } catch (err: any) {
       console.error('WhatsApp share error:', err);

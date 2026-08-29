@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Booking, Event, Ticket } from '../shared/schema.js';
 import fs from 'fs';
 import path from 'path';
+import QRCode from 'qrcode';
 
 // Create a transporter using SMTP
 const transporter = nodemailer.createTransport({
@@ -166,13 +167,13 @@ function parseDataUrl(dataUrl: string): { mimeType: string; buffer: Buffer } | n
   return { mimeType: match[1], buffer: Buffer.from(match[2], 'base64') };
 }
 
-export function generateTicketEmailHtml(
+export async function generateTicketEmailHtml(
   event: Event,
   tickets: Ticket[],
   customerName?: string,
   organizerName?: string,
   options?: { useDataUrls?: boolean }
-): string {
+): Promise<string> {
   const brandName = "TixPass";
   const ticketCount = tickets.length;
   const ticketPrice = event.ticketPrice / 100;
@@ -193,6 +194,18 @@ export function generateTicketEmailHtml(
   } catch {}
 
   const logoRef = useDataUrls && logoDataUrl ? logoDataUrl : 'cid:tixpass-logo';
+
+  let qrDataUrl = '';
+  if (useDataUrls) {
+    try {
+      qrDataUrl = await QRCode.toDataURL(ticketCode, {
+        width: 200,
+        margin: 1,
+        color: { dark: '#18181b', light: '#ffffff' },
+      });
+    } catch {}
+  }
+  const qrSrc = qrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketCode)}`;
 
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
@@ -312,7 +325,7 @@ export function generateTicketEmailHtml(
           <!-- QR CODE -->
           <tr><td style="padding:24px 28px;text-align:center;">
             <div style="display:inline-block;background:#ffffff;border:2px solid #e5e7eb;border-radius:16px;padding:20px;">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketCode)}" alt="QR Code" width="180" height="180" style="display:block;width:180px;height:180px;" />
+              <img src="${qrSrc}" alt="QR Code" width="180" height="180" style="display:block;width:180px;height:180px;" />
             </div>
             <div style="margin-top:12px;font-size:11px;color:#71717a;letter-spacing:0.3px;">Scan this QR code at the entrance</div>
           </td></tr>

@@ -4,41 +4,66 @@ function getAppOrigin(): string {
   return window.location.origin;
 }
 
+function waitForImages(el: HTMLElement): Promise<void> {
+  return new Promise((resolve) => {
+    const images = Array.from(el.querySelectorAll("img"));
+    let loaded = 0;
+    const total = images.length;
+    if (total === 0) return resolve();
+    images.forEach((img) => {
+      const check = () => {
+        loaded++;
+        if (loaded >= total) resolve();
+      };
+      if (img.complete) check();
+      else {
+        img.onload = check;
+        img.onerror = check;
+      }
+    });
+    setTimeout(resolve, 5000);
+  });
+}
+
 export async function generateTicketPdf(bookingId: string): Promise<Blob> {
   const htmlUrl = `${getAppOrigin()}/api/public/bookings/${bookingId}/ticket-html`;
   const res = await fetch(htmlUrl);
   if (!res.ok) throw new Error("Failed to fetch ticket HTML");
   const html = await res.text();
 
-  const container = document.createElement("div");
-  container.innerHTML = html;
-  container.style.position = "fixed";
-  container.style.left = "-9999px";
-  container.style.top = "0";
-  container.style.width = "520px";
-  document.body.appendChild(container);
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "0";
+  iframe.style.width = "520px";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
 
-  await new Promise<void>((resolve) => {
-    const images = container.querySelectorAll("img");
-    let loaded = 0;
-    const total = images.length;
-    if (total === 0) return resolve();
-    images.forEach((img) => {
-      if (img.complete) {
-        loaded++;
-        if (loaded >= total) resolve();
-      } else {
-        img.onload = () => {
-          loaded++;
-          if (loaded >= total) resolve();
-        };
-        img.onerror = () => {
-          loaded++;
-          if (loaded >= total) resolve();
-        };
-      }
-    });
-  });
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    throw new Error("Cannot access iframe document");
+  }
+
+  iframeDoc.open();
+  iframeDoc.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { width: 520px; }
+        img { max-width: 100%; height: auto; }
+      </style>
+    </head>
+    <body>${html}</body>
+    </html>
+  `);
+  iframeDoc.close();
+
+  await new Promise((r) => setTimeout(r, 1000));
+  await waitForImages(iframeDoc.body);
 
   const opt = {
     margin: 0,
@@ -50,6 +75,7 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
       allowTaint: true,
       backgroundColor: "#f0f0f3",
       logging: false,
+      width: 520,
       windowWidth: 520,
     },
     jsPDF: {
@@ -60,9 +86,9 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
     pagebreak: { mode: ["avoid-all"] },
   };
 
-  const pdfBlob = await html2pdf().set(opt).from(container).outputPdf("blob");
+  const pdfBlob = await html2pdf().set(opt).from(iframeDoc.body).outputPdf("blob");
 
-  document.body.removeChild(container);
+  document.body.removeChild(iframe);
 
   return pdfBlob;
 }
