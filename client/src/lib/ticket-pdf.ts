@@ -35,7 +35,7 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
   iframe.style.position = "fixed";
   iframe.style.left = "-9999px";
   iframe.style.top = "0";
-  iframe.style.width = "320px";
+  iframe.style.width = "480px";
   iframe.style.border = "none";
   document.body.appendChild(iframe);
 
@@ -63,12 +63,12 @@ export async function generateTicketPdf(bookingId: string): Promise<Blob> {
       allowTaint: true,
       backgroundColor: "#ffffff",
       logging: false,
-      width: 320,
-      windowWidth: 320,
+      width: 480,
+      windowWidth: 480,
     },
     jsPDF: {
       unit: "mm",
-      format: "a5",
+      format: "a4",
       orientation: "portrait" as const,
     },
     pagebreak: { mode: ["avoid-all", "css", "legacy"] },
