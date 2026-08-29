@@ -176,10 +176,10 @@ export async function generateTicketEmailHtml(
 
   let logoDataUrl = '';
   try {
-    const logoPath = path.join(process.cwd(), 'Tixpass logo.png');
+    const logoPath = path.join(process.cwd(), 'cinema-connects-logo.jpeg');
     if (fs.existsSync(logoPath)) {
       const buf = fs.readFileSync(logoPath);
-      logoDataUrl = `data:image/png;base64,${buf.toString('base64')}`;
+      logoDataUrl = `data:image/jpeg;base64,${buf.toString('base64')}`;
     }
   } catch {}
 
@@ -408,13 +408,13 @@ export async function sendTicketsEmail(
 
   // Logo as CID attachment
   try {
-    const logoPath = path.join(process.cwd(), 'Tixpass logo.png');
+    const logoPath = path.join(process.cwd(), 'cinema-connects-logo.jpeg');
     if (fs.existsSync(logoPath)) {
       const buf = fs.readFileSync(logoPath);
       attachments.push({
-        filename: 'tixpass-logo.png',
+        filename: 'cinema-connects-logo.jpeg',
         content: buf,
-        contentType: 'image/png',
+        contentType: 'image/jpeg',
         contentId: 'tixpass-logo',
       });
     }
