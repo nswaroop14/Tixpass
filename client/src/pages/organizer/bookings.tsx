@@ -213,7 +213,8 @@ export default function OrganizerBookings() {
         window.open(waUrl, "_blank");
       }
     } catch (err: any) {
-      toast({ title: "Error", description: "Failed to fetch tickets for WhatsApp", variant: "destructive" });
+      console.error('WhatsApp fetch error:', err);
+      toast({ title: "Error", description: err?.message || "Failed to fetch tickets for WhatsApp", variant: "destructive" });
     } finally {
       setWhatsAppSending(false);
     }
