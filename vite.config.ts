@@ -51,6 +51,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        navigateFallback: null,
+        navigateFallbackDenylist: [/^\/t\//, /^\/api\//, /^\/admin/, /^\/organizer/, /^\/login/],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith("/api/organizer/"),
