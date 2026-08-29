@@ -23,3 +23,54 @@ export function toDateTimeLocal(isoString: string): string {
   const d = parseWallClock(isoString);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+
+// WhatsApp message formatter
+interface WhatsAppEvent {
+  title: string;
+  eventDate: string;
+  venue: string;
+  ticketTypes: string;
+}
+
+interface WhatsAppBooking {
+  customerPhone: string;
+  ticketQuantity: number;
+}
+
+interface WhatsAppTicket {
+  uniqueTicketCode: string;
+  id: string;
+}
+
+export function formatWhatsAppMessage(
+  event: WhatsAppEvent,
+  booking: WhatsAppBooking,
+  tickets: WhatsAppTicket[],
+  baseUrl: string
+): string {
+  // Sanitize phone number: remove non-digits
+  const phone = booking.customerPhone?.replace(/\D/g, '') || '';
+  
+  if (!phone) return '';
+  
+  const lines = [
+    "🎫 *TICKET CONFIRMED*",
+    "",
+    `*Event:* ${event.title}`,
+    `*Date:* ${formatEventDate(event.eventDate, "EEE, MMM d")}`,
+    `*Time:* ${formatEventTime(event.eventDate, "h:mm a")}`,
+    `*Venue:* ${event.venue}`,
+    `*Type:* ${event.ticketTypes}`,
+    `*Qty:* ${booking.ticketQuantity}`,
+    "",
+    `*Booking ID:* ${tickets[0]?.uniqueTicketCode || "N/A"}`,
+    "*QR Codes:*",
+    ...tickets.map(t => `${baseUrl}/ticket/${t.id}`),
+    "",
+    "Show QR codes at venue entrance."
+  ];
+  
+  const message = lines.join("\n");
+  const encodedMessage = encodeURIComponent(message);
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}

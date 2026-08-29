@@ -368,3 +368,13 @@ export function useUpdateBranding() {
     },
   });
 }
+
+export function useTicketsByBooking() {
+  return useMutation({
+    mutationFn: async (bookingId: string) => {
+      const res = await fetchWithAuth(`/api/organizer/bookings/${bookingId}/tickets`);
+      if (!res.ok) throw new Error("Failed to fetch tickets");
+      return res.json();
+    },
+  });
+}

@@ -747,6 +747,28 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
+  // Get tickets by booking ID (for WhatsApp sharing)
+  app.get("/api/organizer/bookings/:id/tickets", authenticateToken, requireOrganizer, async (req: any, res) => {
+    try {
+      const org = await storage.getOrganizerByUserId(req.user.id);
+      if (!org) return res.status(404).json({ message: "Organizer not found" });
+
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+      const event = await storage.getEvent(booking.eventId);
+      if (!event || event.organizerId !== org.id) {
+        return res.status(404).json({ message: "Event not found or access denied" });
+      }
+
+      const tickets = await storage.getTicketsByBooking(booking.id);
+      return res.status(200).json(tickets);
+    } catch (err) {
+      console.error('Get tickets by booking error:', err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post(api.organizer.tickets.scan.path, authenticateToken, requireOrganizer, async (req: any, res) => {
     try {
       const input = api.organizer.tickets.scan.input.parse(req.body);

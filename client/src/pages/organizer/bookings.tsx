@@ -10,10 +10,11 @@ import {
   useResendTickets,
   useOrganizerProfile,
   useSaveBookingFilterPreferences,
+  useTicketsByBooking,
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
-import { formatEventDateTime, parseWallClock } from "@/lib/date-utils";
-import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket } from "lucide-react";
+import { formatEventDateTime, parseWallClock, formatWhatsAppMessage } from "@/lib/date-utils";
+import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,10 +33,12 @@ export default function OrganizerBookings() {
   const updateBooking = useUpdateBooking();
   const deleteBooking = useDeleteBooking();
   const resendTickets = useResendTickets();
+  const fetchTicketsByBooking = useTicketsByBooking();
   const saveFilterPreferences = useSaveBookingFilterPreferences();
   const { toast } = useToast();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [whatsAppSending, setWhatsAppSending] = useState(false);
   const [formData, setFormData] = useState({
     eventId: "",
     customerName: "",
@@ -184,6 +187,35 @@ export default function OrganizerBookings() {
       toast({ title: "Resent", description: "Tickets resent successfully to " + bookingToResend.booking.customerEmail });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleWhatsAppShare = async (row: any) => {
+    if (!row.booking.customerPhone) return;
+    setWhatsAppSending(true);
+    try {
+      const tickets = await fetchTicketsByBooking.mutateAsync(row.booking.id);
+      const waUrl = formatWhatsAppMessage(
+        {
+          title: row.event.title,
+          eventDate: row.event.eventDate,
+          venue: row.event.venue,
+          ticketTypes: row.event.ticketTypes,
+        },
+        {
+          customerPhone: row.booking.customerPhone,
+          ticketQuantity: row.booking.ticketQuantity,
+        },
+        tickets,
+        window.location.origin
+      );
+      if (waUrl) {
+        window.open(waUrl, "_blank");
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: "Failed to fetch tickets for WhatsApp", variant: "destructive" });
+    } finally {
+      setWhatsAppSending(false);
     }
   };
 
@@ -405,6 +437,30 @@ export default function OrganizerBookings() {
                         Resend
                       </Button>
                     )}
+                    {row.booking.status === "paid" && row.booking.customerPhone && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50 gap-1"
+                        onClick={() => handleWhatsAppShare(row)}
+                        disabled={whatsAppSending || resendTickets.isPending}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        WhatsApp
+                      </Button>
+                    )}
+                    {row.booking.status === "paid" && !row.booking.customerPhone && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-gray-300 cursor-not-allowed gap-1"
+                        disabled
+                        title="No WhatsApp number in booking"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        WhatsApp
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -515,6 +571,29 @@ export default function OrganizerBookings() {
                             disabled={resendTickets.isPending}
                           >
                             <Send className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {row.booking.status === "paid" && row.booking.customerPhone && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            title="Send via WhatsApp"
+                            onClick={() => handleWhatsAppShare(row)}
+                            disabled={whatsAppSending || resendTickets.isPending}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {row.booking.status === "paid" && !row.booking.customerPhone && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-gray-300 cursor-not-allowed"
+                            title="No WhatsApp number in booking"
+                            disabled
+                          >
+                            <MessageSquare className="w-4 h-4" />
                           </Button>
                         )}
                         <Button
