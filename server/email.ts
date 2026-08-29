@@ -174,16 +174,25 @@ export async function generateTicketEmailHtml(
 
   const useDataUrls = options?.useDataUrls ?? false;
 
-  let logoDataUrl = '';
+  let headerLogoDataUrl = '';
+  let footerLogoDataUrl = '';
   try {
-    const logoPath = path.join(process.cwd(), 'cinema-connects-logo.jpeg');
-    if (fs.existsSync(logoPath)) {
-      const buf = fs.readFileSync(logoPath);
-      logoDataUrl = `data:image/jpeg;base64,${buf.toString('base64')}`;
+    const headerPath = path.join(process.cwd(), 'cinema-connects-logo.jpeg');
+    if (fs.existsSync(headerPath)) {
+      const buf = fs.readFileSync(headerPath);
+      headerLogoDataUrl = `data:image/jpeg;base64,${buf.toString('base64')}`;
+    }
+  } catch {}
+  try {
+    const footerPath = path.join(process.cwd(), 'Tixpass logo.png');
+    if (fs.existsSync(footerPath)) {
+      const buf = fs.readFileSync(footerPath);
+      footerLogoDataUrl = `data:image/png;base64,${buf.toString('base64')}`;
     }
   } catch {}
 
-  const logoRef = useDataUrls && logoDataUrl ? logoDataUrl : 'cid:tixpass-logo';
+  const headerLogoRef = useDataUrls && headerLogoDataUrl ? headerLogoDataUrl : 'cid:header-logo';
+  const footerLogoRef = useDataUrls && footerLogoDataUrl ? footerLogoDataUrl : 'cid:footer-logo';
 
   let qrDataUrl = '';
   if (useDataUrls) {
@@ -209,10 +218,10 @@ export async function generateTicketEmailHtml(
   }
 
   if (!posterHtml) {
-    posterHtml = `<div style="width:100%;height:180px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><img src="${logoRef}" alt="TixPass" width="140" style="height:auto;" /></div>`;
+    posterHtml = `<div style="width:100%;height:180px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><img src="${headerLogoRef}" alt="Indian Cinema Connects" width="140" style="height:auto;" /></div>`;
   }
 
-  const logoImgTag = logoDataUrl || useDataUrls ? `<img src="${logoRef}" alt="TixPass" width="160" style="display:inline-block;height:auto;" />` : `<img src="${logoRef}" alt="TixPass" width="160" style="display:inline-block;height:auto;" />`;
+  const footerLogoImgTag = `<img src="${footerLogoRef}" alt="TixPass" width="160" style="display:inline-block;height:auto;" />`;
 
   return `
 <!DOCTYPE html>
@@ -225,7 +234,7 @@ export async function generateTicketEmailHtml(
 
       <!-- HEADER -->
       <tr><td style="padding:0 0 20px 0;text-align:center;">
-        <img src="${logoRef}" alt="TixPass" width="140" style="display:inline-block;height:auto;max-width:140px;" />
+        <img src="${headerLogoRef}" alt="Indian Cinema Connects" width="140" style="display:inline-block;height:auto;max-width:140px;" />
       </td></tr>
 
       <!-- CONFIRMATION BANNER -->
@@ -376,7 +385,7 @@ export async function generateTicketEmailHtml(
 
       <!-- FOOTER -->
       <tr><td style="padding:28px 0 0 0;text-align:center;">
-        ${logoImgTag}
+        ${footerLogoImgTag}
         <div style="font-size:12px;color:#a1a1aa;margin-top:8px;font-style:italic;">Your ticket. Your experience.</div>
         <div style="font-size:11px;color:#d4d4d8;margin-top:12px;">&copy; ${new Date().getFullYear()} TixPass. All rights reserved.</div>
       </td></tr>
@@ -406,16 +415,30 @@ export async function sendTicketsEmail(
   // Build CID attachments for inline images
   const attachments: any[] = [];
 
-  // Logo as CID attachment
+  // Header logo (Indian Cinema Connects)
   try {
-    const logoPath = path.join(process.cwd(), 'cinema-connects-logo.jpeg');
-    if (fs.existsSync(logoPath)) {
-      const buf = fs.readFileSync(logoPath);
+    const headerPath = path.join(process.cwd(), 'cinema-connects-logo.jpeg');
+    if (fs.existsSync(headerPath)) {
+      const buf = fs.readFileSync(headerPath);
       attachments.push({
         filename: 'cinema-connects-logo.jpeg',
         content: buf,
         contentType: 'image/jpeg',
-        contentId: 'tixpass-logo',
+        contentId: 'header-logo',
+      });
+    }
+  } catch {}
+
+  // Footer logo (TixPass)
+  try {
+    const footerPath = path.join(process.cwd(), 'Tixpass logo.png');
+    if (fs.existsSync(footerPath)) {
+      const buf = fs.readFileSync(footerPath);
+      attachments.push({
+        filename: 'tixpass-logo.png',
+        content: buf,
+        contentType: 'image/png',
+        contentId: 'footer-logo',
       });
     }
   } catch {}
