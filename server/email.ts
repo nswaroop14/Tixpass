@@ -1,20 +1,13 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { format } from 'date-fns';
 import { Booking, Event, Ticket } from '../shared/schema.js';
 import fs from 'fs';
 import path from 'path';
 import QRCode from 'qrcode';
 
-// Create a transporter using SMTP
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const FROM_EMAIL = 'bookings@tix-pass.com';
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const getAppUrl = () => {
   if (process.env.APP_URL) return process.env.APP_URL;
@@ -25,89 +18,86 @@ const getAppUrl = () => {
 const APP_URL = getAppUrl();
 
 export async function sendActivationEmail(toEmail: string, organizerName: string) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️ SMTP not configured. Skipping activation email to:', toEmail);
+  if (!resend) {
+    console.warn('⚠️ Resend not configured. Skipping activation email to:', toEmail);
     return;
   }
-  const mailOptions = {
-    from: process.env.SMTP_FROM || '"TixPass" <no-reply@tixpass.com>',
-    to: toEmail,
-    subject: 'Your Organizer Account is Activated',
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #fafafa;">
-        <h2 style="color: #000; text-align: center;">Welcome, ${organizerName}!</h2>
-        <p style="text-align: center; font-size: 16px;">Your organizer account has been approved and activated.</p>
-        <p style="text-align: center;">You can log in here:</p>
-        <p style="text-align: center; margin-top: 10px;">
-          <a href="${APP_URL}/login" style="display:inline-block;padding:10px 16px;background:#000;color:#fff;border-radius:8px;text-decoration:none;">Go to Organizer Login</a>
-        </p>
-      </div>
-    `,
-  };
   try {
-    await transporter.sendMail(mailOptions);
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: 'Your Organizer Account is Activated',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #fafafa;">
+          <h2 style="color: #000; text-align: center;">Welcome, ${organizerName}!</h2>
+          <p style="text-align: center; font-size: 16px;">Your organizer account has been approved and activated.</p>
+          <p style="text-align: center;">You can log in here:</p>
+          <p style="text-align: center; margin-top: 10px;">
+            <a href="${APP_URL}/login" style="display:inline-block;padding:10px 16px;background:#000;color:#fff;border-radius:8px;text-decoration:none;">Go to Organizer Login</a>
+          </p>
+        </div>
+      `,
+    });
   } catch (error) {
     console.error('❌ Failed to send activation email:', error);
   }
 }
 
 export async function sendEventBankUpdateEmail(toEmail: string, organizerName: string, eventLabel: string, details: any, changedAt: Date) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️ SMTP not configured. Skipping event bank update email to:', toEmail);
+  if (!resend) {
+    console.warn('⚠️ Resend not configured. Skipping event bank update email to:', toEmail);
     return;
   }
-  const mailOptions = {
-    from: process.env.SMTP_FROM || '"TixPass" <no-reply@tixpass.com>',
-    to: toEmail,
-    subject: `Bank Details Updated – ${eventLabel}`,
-    html: `
-      <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 12px; background-color: #fafafa;">
-        <h2 style="color: #000; text-align: center; margin-bottom: 12px;">Bank Details Changed</h2>
-        <p style="text-align: center; margin: 0 0 18px 0;">${organizerName} • ${eventLabel}</p>
-        <p style="text-align:center; font-size:12px; color:#666;">Changed at: ${changedAt.toLocaleString()}</p>
-        <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:16px; margin-top:12px;">
-          <p><strong>Bank Name:</strong> ${details.bankName || "—"}</p>
-          <p><strong>Account Holder:</strong> ${details.accountHolder || "—"}</p>
-          <p><strong>Account Number:</strong> ${details.accountNumber || "—"}</p>
-          <p><strong>Routing Number:</strong> ${details.routingNumber || "—"}</p>
-          <p><strong>Account Type:</strong> ${details.accountType || "—"}</p>
-        </div>
-        <p style="text-align:center; font-size:12px; color:#999; margin-top: 18px;">If you did not make this change, please contact support immediately.</p>
-      </div>
-    `,
-  };
   try {
-    await transporter.sendMail(mailOptions);
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: `Bank Details Updated – ${eventLabel}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 12px; background-color: #fafafa;">
+          <h2 style="color: #000; text-align: center; margin-bottom: 12px;">Bank Details Changed</h2>
+          <p style="text-align: center; margin: 0 0 18px 0;">${organizerName} • ${eventLabel}</p>
+          <p style="text-align:center; font-size:12px; color:#666;">Changed at: ${changedAt.toLocaleString()}</p>
+          <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:16px; margin-top:12px;">
+            <p><strong>Bank Name:</strong> ${details.bankName || "—"}</p>
+            <p><strong>Account Holder:</strong> ${details.accountHolder || "—"}</p>
+            <p><strong>Account Number:</strong> ${details.accountNumber || "—"}</p>
+            <p><strong>Routing Number:</strong> ${details.routingNumber || "—"}</p>
+            <p><strong>Account Type:</strong> ${details.accountType || "—"}</p>
+          </div>
+          <p style="text-align:center; font-size:12px; color:#999; margin-top: 18px;">If you did not make this change, please contact support immediately.</p>
+        </div>
+      `,
+    });
   } catch (error) {
     console.error('❌ Failed to send event bank update email:', error);
   }
 }
 export async function sendPasswordResetEmail(toEmail: string, organizerName: string, tempPassword: string) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️ SMTP not configured. Skipping password reset email to:', toEmail);
+  if (!resend) {
+    console.warn('⚠️ Resend not configured. Skipping password reset email to:', toEmail);
     return;
   }
-  const mailOptions = {
-    from: process.env.SMTP_FROM || '"TixPass" <no-reply@tixpass.com>',
-    to: toEmail,
-    subject: 'Your Organizer Password Has Been Reset',
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #fafafa;">
-        <h2 style="color: #000; text-align: center;">Hi ${organizerName},</h2>
-        <p style="text-align: center; font-size: 16px;">Your organizer account password has been reset.</p>
-        <div style="margin: 20px auto; max-width: 360px; padding: 12px; border: 1px dashed #999; border-radius: 8px; background:#fff; text-align:center;">
-          <p style="margin:0 0 6px 0; font-size: 12px; color: #666;">Temporary Password</p>
-          <p style="margin:0; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">${tempPassword}</p>
-        </div>
-        <p style="text-align: center;">Please log in and change your password immediately.</p>
-        <p style="text-align: center; margin-top: 10px;">
-          <a href="${APP_URL}/login" style="display:inline-block;padding:10px 16px;background:#000;color:#fff;border-radius:8px;text-decoration:none;">Go to Organizer Login</a>
-        </p>
-      </div>
-    `,
-  };
   try {
-    await transporter.sendMail(mailOptions);
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: 'Your Organizer Password Has Been Reset',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #fafafa;">
+          <h2 style="color: #000; text-align: center;">Hi ${organizerName},</h2>
+          <p style="text-align: center; font-size: 16px;">Your organizer account password has been reset.</p>
+          <div style="margin: 20px auto; max-width: 360px; padding: 12px; border: 1px dashed #999; border-radius: 8px; background:#fff; text-align:center;">
+            <p style="margin:0 0 6px 0; font-size: 12px; color: #666;">Temporary Password</p>
+            <p style="margin:0; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">${tempPassword}</p>
+          </div>
+          <p style="text-align: center;">Please log in and change your password immediately.</p>
+          <p style="text-align: center; margin-top: 10px;">
+            <a href="${APP_URL}/login" style="display:inline-block;padding:10px 16px;background:#000;color:#fff;border-radius:8px;text-decoration:none;">Go to Organizer Login</a>
+          </p>
+        </div>
+      `,
+    });
   } catch (error) {
     console.error('❌ Failed to send password reset email:', error);
   }
@@ -411,9 +401,9 @@ export async function sendTicketsEmail(
   organizerName?: string
 ) {
   const brandName = "TixPass";
-  console.log(`📧 Attempting to send tickets email to ${customerEmail} using ${process.env.SMTP_USER}...`);
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️ SMTP not configured. Skipping ticket email to:', customerEmail);
+  console.log(`📧 Attempting to send tickets email to ${customerEmail} via Resend...`);
+  if (!resend) {
+    console.warn('⚠️ Resend not configured. Skipping ticket email to:', customerEmail);
     console.log('Ticket links that would have been sent:');
     tickets.forEach(t => console.log(`${APP_URL}/ticket/${t.id}`));
     return;
@@ -428,51 +418,38 @@ export async function sendTicketsEmail(
 
   const ticketCode = tickets.length > 0 ? tickets[0].uniqueTicketCode : "";
 
-  // Handle poster image - convert base64 to CID attachment or use external URL
-  const attachments: any[] = [];
-
-  // Attach TixPass logo
+  // Build data URLs for inline images (Resend doesn't support cid: references)
+  let logoDataUrl = '';
   try {
     const logoPath = path.join(process.cwd(), 'Tixpass logo.png');
     if (fs.existsSync(logoPath)) {
-      attachments.push({
-        filename: 'tixpass-logo.png',
-        content: fs.readFileSync(logoPath),
-        contentType: 'image/png',
-        cid: 'tixpass-logo'
-      });
+      const buf = fs.readFileSync(logoPath);
+      logoDataUrl = `data:image/png;base64,${buf.toString('base64')}`;
     }
-  } catch (e) {
-    console.warn('Could not load TixPass logo for email');
-  }
+  } catch {}
 
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
 
   if (bannerUrl.startsWith('data:')) {
-    const parsed = parseDataUrl(bannerUrl);
-    if (parsed) {
-      attachments.push({
-        filename: 'poster.jpg',
-        content: parsed.buffer,
-        contentType: parsed.mimeType,
-        cid: 'event-poster'
-      });
-      posterHtml = `<img src="cid:event-poster" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
-    }
+    posterHtml = `<img src="${bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
   } else if (bannerUrl.startsWith('http')) {
     posterHtml = `<img src="${bannerUrl}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
   }
 
   if (!posterHtml) {
-    posterHtml = `<div style="width:100%;height:180px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;"><img src="cid:tixpass-logo" alt="TixPass" width="140" style="height:auto;" /></div>`;
+    const fallbackImg = logoDataUrl ? `<img src="${logoDataUrl}" alt="TixPass" width="140" style="height:auto;" />` : '';
+    posterHtml = `<div style="width:100%;height:180px;background:linear-gradient(135deg,#1e1b4b 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;">${fallbackImg}</div>`;
   }
 
-  const mailOptions = {
-    from: process.env.SMTP_FROM || `"${organizerName || brandName}" <no-reply@tixpass.com>`,
-    to: customerEmail,
-    subject: `🎬 Booking Confirmed — ${event.title} | TixPass`,
-    html: `
+  const logoImgHtml = logoDataUrl ? `<img src="${logoDataUrl}" alt="TixPass" width="160" style="display:inline-block;height:auto;" />` : '';
+
+  try {
+    const result = await resend.emails.send({
+      from: `"${organizerName || brandName}" <${FROM_EMAIL}>`,
+      to: customerEmail,
+      subject: `🎬 Booking Confirmed — ${event.title} | TixPass`,
+      html: `
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -634,7 +611,7 @@ export async function sendTicketsEmail(
 
       <!-- FOOTER -->
       <tr><td style="padding:28px 0 0 0;text-align:center;">
-        <img src="cid:tixpass-logo" alt="TixPass" width="160" style="display:inline-block;height:auto;" />
+        ${logoImgHtml}
         <div style="font-size:12px;color:#a1a1aa;margin-top:8px;font-style:italic;">Your ticket. Your experience.</div>
         <div style="font-size:11px;color:#d4d4d8;margin-top:12px;">&copy; ${new Date().getFullYear()} TixPass. All rights reserved.</div>
       </td></tr>
@@ -644,50 +621,46 @@ export async function sendTicketsEmail(
 </table>
 </body>
 </html>`,
-    text: [
-      `TIXPASS`,
-      ``,
-      `Booking Confirmed`,
-      ``,
-      `Hi ${customerName || "there"},`,
-      `Your booking for ${ticketCount} ticket(s) to ${event.title} has been confirmed!`,
-      ``,
-      `EVENT DETAILS`,
-      `Date: ${dateStr}`,
-      `Time: ${timeStr}`,
-      `Venue: ${event.venue}`,
-      event.screen ? `Screen: ${event.screen}` : '',
-      event.language ? `Audio: ${event.language}` : '',
-      event.subtitle ? `Subtitles: ${event.subtitle}` : '',
-      `Type: ${event.ticketTypes}`,
-      ``,
-      `TICKET`,
-      `${ticketCount} × ${event.ticketTypes}`,
-      ``,
-      `QR CODE`,
-      `Scan this QR code at the entrance.`,
-      `Booking ID: ${ticketCode}`,
-      ``,
-      `PRICE BREAKDOWN`,
-      `Ticket(s): €${totalPrice.toFixed(2)}`,
-      `Convenience Fee: €0.00`,
-      `Discount: - €0.00`,
-      `Total: €${totalPrice.toFixed(2)}`,
-      `Status: PAID`,
-      event.notes ? `` : '',
-      event.notes ? `Important Information:` : '',
-      event.notes ? event.notes.split("\n").filter((n: string) => n.trim()).map((n: string) => `• ${n.trim()}`).join("\n") : '',
-      ``,
-      `Your ticket. Your experience.`,
-      `© ${new Date().getFullYear()} TixPass`
-    ].filter(Boolean).join("\n"),
-    attachments,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Ticket email sent successfully:', info.messageId);
-    return info;
+      text: [
+        `TIXPASS`,
+        ``,
+        `Booking Confirmed`,
+        ``,
+        `Hi ${customerName || "there"},`,
+        `Your booking for ${ticketCount} ticket(s) to ${event.title} has been confirmed!`,
+        ``,
+        `EVENT DETAILS`,
+        `Date: ${dateStr}`,
+        `Time: ${timeStr}`,
+        `Venue: ${event.venue}`,
+        event.screen ? `Screen: ${event.screen}` : '',
+        event.language ? `Audio: ${event.language}` : '',
+        event.subtitle ? `Subtitles: ${event.subtitle}` : '',
+        `Type: ${event.ticketTypes}`,
+        ``,
+        `TICKET`,
+        `${ticketCount} × ${event.ticketTypes}`,
+        ``,
+        `QR CODE`,
+        `Scan this QR code at the entrance.`,
+        `Booking ID: ${ticketCode}`,
+        ``,
+        `PRICE BREAKDOWN`,
+        `Ticket(s): €${totalPrice.toFixed(2)}`,
+        `Convenience Fee: €0.00`,
+        `Discount: - €0.00`,
+        `Total: €${totalPrice.toFixed(2)}`,
+        `Status: PAID`,
+        event.notes ? `` : '',
+        event.notes ? `Important Information:` : '',
+        event.notes ? event.notes.split("\n").filter((n: string) => n.trim()).map((n: string) => `• ${n.trim()}`).join("\n") : '',
+        ``,
+        `Your ticket. Your experience.`,
+        `© ${new Date().getFullYear()} TixPass`
+      ].filter(Boolean).join("\n"),
+    });
+    console.log('✅ Ticket email sent successfully:', result.data?.id);
+    return result;
   } catch (error) {
     console.error('❌ Failed to send ticket email:', error);
     throw error;
@@ -695,18 +668,17 @@ export async function sendTicketsEmail(
 }
 
 export async function sendAdminAlert(subject: string, message: string) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.ADMIN_EMAIL) {
-    console.warn('⚠️ Admin alert not sent. SMTP or ADMIN_EMAIL missing.', { subject });
+  if (!resend || !process.env.ADMIN_EMAIL) {
+    console.warn('⚠️ Admin alert not sent. Resend or ADMIN_EMAIL missing.', { subject });
     return;
   }
-  const mailOptions = {
-    from: process.env.SMTP_FROM || '"TixPass Alerts" <no-reply@tixpass.com>',
-    to: process.env.ADMIN_EMAIL,
-    subject,
-    text: message,
-  };
   try {
-    await transporter.sendMail(mailOptions);
+    await resend.emails.send({
+      from: `"TixPass Alerts" <${FROM_EMAIL}>`,
+      to: process.env.ADMIN_EMAIL,
+      subject,
+      text: message,
+    });
     console.log('📣 Admin alert sent:', subject);
   } catch (err) {
     console.error('❌ Failed to send admin alert:', err);
@@ -714,43 +686,42 @@ export async function sendAdminAlert(subject: string, message: string) {
 }
 
 export async function sendDailyBookingsReportEmail(toEmail: string, organizerName: string, dateLabel: string, summary: { total: number; paid: number; submitted: number; pending: number; revenueCents: number; }) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️ SMTP not configured. Skipping daily report email to:', toEmail);
+  if (!resend) {
+    console.warn('⚠️ Resend not configured. Skipping daily report email to:', toEmail);
     return;
   }
-  const mailOptions = {
-    from: process.env.SMTP_FROM || '"TixPass" <no-reply@tixpass.com>',
-    to: toEmail,
-    subject: `Daily Bookings Report – ${dateLabel}`,
-    html: `
-      <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 12px; background-color: #fafafa;">
-        <h2 style="color: #000; text-align: center; margin-bottom: 12px;">Daily Bookings Report</h2>
-        <p style="text-align: center; margin: 0 0 18px 0;">${organizerName} • ${dateLabel}</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom: 20px;">
-          <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
-            <div style="font-size:12px; color:#666;">Total</div>
-            <div style="font-size:20px; font-weight:bold;">${summary.total}</div>
-          </div>
-          <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
-            <div style="font-size:12px; color:#666;">Paid</div>
-            <div style="font-size:20px; font-weight:bold; color:#0a0;">${summary.paid}</div>
-          </div>
-          <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
-            <div style="font-size:12px; color:#666;">Submitted</div>
-            <div style="font-size:20px; font-weight:bold; color:#f90;">${summary.submitted}</div>
-          </div>
-          <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
-            <div style="font-size:12px; color:#666;">Pending</div>
-            <div style="font-size:20px; font-weight:bold; color:#c00;">${summary.pending}</div>
-          </div>
-        </div>
-        <p style="text-align:center; font-size:16px; font-weight:bold; margin-top: 10px;">Estimated Revenue: €${(summary.revenueCents / 100).toFixed(2)}</p>
-        <p style="text-align:center; font-size:12px; color:#999; margin-top: 18px;">This is an automated report generated by TixPass.</p>
-      </div>
-    `,
-  };
   try {
-    await transporter.sendMail(mailOptions);
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: `Daily Bookings Report – ${dateLabel}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 12px; background-color: #fafafa;">
+          <h2 style="color: #000; text-align: center; margin-bottom: 12px;">Daily Bookings Report</h2>
+          <p style="text-align: center; margin: 0 0 18px 0;">${organizerName} • ${dateLabel}</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom: 20px;">
+            <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:12px; color:#666;">Total</div>
+              <div style="font-size:20px; font-weight:bold;">${summary.total}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:12px; color:#666;">Paid</div>
+              <div style="font-size:20px; font-weight:bold; color:#0a0;">${summary.paid}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:12px; color:#666;">Submitted</div>
+              <div style="font-size:20px; font-weight:bold; color:#f90;">${summary.submitted}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:12px; color:#666;">Pending</div>
+              <div style="font-size:20px; font-weight:bold; color:#c00;">${summary.pending}</div>
+            </div>
+          </div>
+          <p style="text-align:center; font-size:16px; font-weight:bold; margin-top: 10px;">Estimated Revenue: €${(summary.revenueCents / 100).toFixed(2)}</p>
+          <p style="text-align:center; font-size:12px; color:#999; margin-top: 18px;">This is an automated report generated by TixPass.</p>
+        </div>
+      `,
+    });
   } catch (error) {
     console.error('❌ Failed to send daily report email:', error);
   }
