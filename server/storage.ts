@@ -63,6 +63,7 @@ export interface IStorage {
   getTicketsByBooking(bookingId: string): Promise<Ticket[]>;
   getTicket(id: string): Promise<{ticket: Ticket, event: Event} | undefined>;
   getTicketByCode(uniqueTicketCode: string): Promise<Ticket | undefined>;
+  getTicketByCodeWithEvent(uniqueTicketCode: string): Promise<{ ticket: Ticket; event: Event } | undefined>;
   createTickets(bookingId: string, eventId: string, quantity: number): Promise<Ticket[]>;
   updateTicketStatus(id: string, status: "unused" | "scanned"): Promise<Ticket | undefined>;
   // Organizer Applications
@@ -549,6 +550,15 @@ export class DatabaseStorage implements IStorage {
   async getTicketByCode(uniqueTicketCode: string): Promise<Ticket | undefined> {
     const [ticket] = await db.select().from(tickets).where(eq(tickets.uniqueTicketCode, uniqueTicketCode));
     return ticket;
+  }
+
+  async getTicketByCodeWithEvent(uniqueTicketCode: string): Promise<{ ticket: Ticket; event: Event } | undefined> {
+    const [result] = await db
+      .select({ ticket: tickets, event: events })
+      .from(tickets)
+      .innerJoin(events, eq(tickets.eventId, events.id))
+      .where(eq(tickets.uniqueTicketCode, uniqueTicketCode));
+    return result;
   }
 
   async createTickets(bookingId: string, eventId: string, quantity: number): Promise<Ticket[]> {

@@ -14,7 +14,7 @@ import {
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
 import { formatEventDateTime, parseWallClock } from "@/lib/date-utils";
-import { downloadTicketPdf, generateWhatsAppTicketPdf } from "@/lib/ticket-pdf";
+import { downloadTicketPdf } from "@/lib/ticket-pdf";
 import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -196,32 +196,24 @@ export default function OrganizerBookings() {
     setWhatsAppSending(true);
     try {
       const phone = row.booking.customerPhone?.replace(/\D/g, '') || '';
-      const filename = `TixPass-Ticket-${row.booking.id}.pdf`;
-      const blob = await generateWhatsAppTicketPdf(row.booking.id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      if (phone) {
-        const ticketCode = row.booking.id.slice(0, 8).toUpperCase();
-        const msg = encodeURIComponent(
-          `Your TixPass ticket is confirmed!\n\n` +
-          `${row.event.title}\n` +
-          `${formatEventDateTime(row.event.eventDate)}\n` +
-          `${row.event.venue}\n\n` +
-          `Please show the QR code at the entrance.\n\n` +
-          `Booking ID: ${ticketCode}`
-        );
-        window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
-        toast({ title: "PDF downloaded", description: "Attach the downloaded PDF in the WhatsApp chat." });
-      }
+      const res = await fetch(`/api/public/bookings/${row.booking.id}/first-ticket`);
+      if (!res.ok) throw new Error("Could not fetch ticket code");
+      const { ticketCode } = await res.json();
+      const ticketUrl = `${window.location.origin}/t/${ticketCode}`;
+      const msg = encodeURIComponent(
+        `Your TixPass ticket is confirmed!\n\n` +
+        `${row.event.title}\n` +
+        `${formatEventDateTime(row.event.eventDate)}\n` +
+        `${row.event.venue}\n\n` +
+        `View your ticket:\n${ticketUrl}\n\n` +
+        `Please show the QR code at the entrance.\n\n` +
+        `Booking ID: ${ticketCode}`
+      );
+      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+      toast({ title: "WhatsApp opened", description: "Ticket link sent to customer." });
     } catch (err: any) {
       console.error('WhatsApp share error:', err);
-      toast({ title: "Error", description: err?.message || "Failed to generate ticket PDF", variant: "destructive" });
+      toast({ title: "Error", description: err?.message || "Failed to send WhatsApp", variant: "destructive" });
     } finally {
       setWhatsAppSending(false);
     }

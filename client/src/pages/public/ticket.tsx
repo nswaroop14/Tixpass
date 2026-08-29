@@ -207,6 +207,25 @@ export default function PublicTicket() {
               )}
             </Button>
           </div>
+
+          {/* Share on WhatsApp */}
+          <div className="mt-3">
+            <Button
+              onClick={() => {
+                const ticketUrl = `${window.location.origin}/t/${ticket.uniqueTicketCode}`;
+                const msg = encodeURIComponent(
+                  `Your TixPass ticket is confirmed!\n\n` +
+                  `${event.title}\n` +
+                  `View your ticket:\n${ticketUrl}\n\n` +
+                  `Please show the QR code at the entrance.`
+                );
+                window.open(`https://wa.me/?text=${msg}`, "_blank");
+              }}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              Share on WhatsApp
+            </Button>
+          </div>
         </div>
       </div>
     </PublicLayout>

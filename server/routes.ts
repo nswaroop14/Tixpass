@@ -1315,5 +1315,35 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
+  // Short ticket link — /t/:ticketCode
+  app.get("/t/:ticketCode", async (req, res) => {
+    try {
+      const { ticket, event } = await storage.getTicketByCodeWithEvent(req.params.ticketCode) || {};
+      if (!ticket || !event) return res.status(404).send("Ticket not found");
+
+      const tickets = await storage.getTicketsByBooking(ticket.bookingId);
+      if (tickets.length === 0) return res.status(404).send("No tickets found");
+
+      const html = await generateTicketWhatsAppHtml(event, tickets);
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.status(200).send(html);
+    } catch (err) {
+      console.error("Error loading ticket link:", err);
+      res.status(500).send("Internal server error");
+    }
+  });
+
+  // Get first ticket code for a booking (used for WhatsApp link)
+  app.get("/api/public/bookings/:id/first-ticket", async (req, res) => {
+    try {
+      const tickets = await storage.getTicketsByBooking(req.params.id);
+      if (tickets.length === 0) return res.status(404).json({ message: "No tickets found" });
+      res.status(200).json({ ticketCode: tickets[0].uniqueTicketCode });
+    } catch (err) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   return httpServer;
 }
