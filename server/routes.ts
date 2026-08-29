@@ -535,7 +535,8 @@ export async function registerRoutes(
       if (!org) return res.status(404).json({ message: "Organizer not found" });
       const eventId = (req.query?.eventId as string) || "";
       const rows = await storage.getBookingsByOrganizer(org.id);
-      const filtered = eventId ? rows.filter(r => r.event.id === eventId) : rows;
+      // When no specific event is selected, only export bookings for active events
+      const filtered = eventId ? rows.filter(r => r.event.id === eventId) : rows.filter(r => r.event.status === "active");
       const header = [
         "booking_id","event_id","event_title","customer_name","customer_email","customer_phone",
         "ticket_quantity","status","transaction_reference","created_at"

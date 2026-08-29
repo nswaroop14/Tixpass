@@ -82,13 +82,16 @@ export default function OrganizerBookings() {
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
     let result = bookings;
-    if (selectedEventId) {
+    // When no specific event is selected, only show bookings for active events
+    if (!selectedEventId) {
+      result = result.filter((row: any) => row.event.status === "active");
+    } else {
       result = result.filter((row: any) => row.event.id === selectedEventId);
     }
     if (selectedStatus) {
       result = result.filter((row: any) => row.booking.status === selectedStatus);
     }
-    return [...result].sort((a: any, b: any) => new Date(b.booking.createdAt).getTime() - new Date(a.booking.createdAt).getTime());
+    return [...result].sort((a: any, b: any) => parseWallClock(b.booking.createdAt).getTime() - parseWallClock(a.booking.createdAt).getTime());
   }, [bookings, selectedEventId, selectedStatus]);
 
   const isLoadingState = isBookingsLoading || isEventsLoading;
@@ -225,7 +228,7 @@ export default function OrganizerBookings() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Events</SelectItem>
-                {events?.map((event: any) => (
+                {events?.filter((event: any) => event.status === "active").map((event: any) => (
                   <SelectItem key={event.id} value={event.id}>
                     {event.title}
                   </SelectItem>
