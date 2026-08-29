@@ -760,11 +760,13 @@ export async function generateTicketWhatsAppHtml(
     }
   } catch {}
 
-  const qrDataUrl = await QRCode.toDataURL(ticketCode, {
-    width: 160,
-    margin: 1,
-    color: { dark: '#000000', light: '#ffffff' },
-  });
+  let qrDataUrl = '';
+  if (ticketCode) {
+    try {
+      const qrBuf = await QRCode.toBuffer(ticketCode, { width: 160, margin: 1 });
+      qrDataUrl = `data:image/png;base64,${qrBuf.toString('base64')}`;
+    } catch {}
+  }
 
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
@@ -808,7 +810,7 @@ export async function generateTicketWhatsAppHtml(
                 <tr><td style="width:22px;height:22px;background:#16a34a;border-radius:50%;text-align:center;font-size:13px;color:#fff;font-weight:bold;line-height:22px;">&#10003;</td></tr>
               </table>
             </td>
-            <td valign="middle"><span style="font-size:16px;font-weight:700;color:#16a34a;letter-spacing:1px;text-transform:uppercase;">Booking Confirmed</span></td>
+            <td valign="middle" style="line-height:22px;"><span style="font-size:16px;font-weight:700;color:#16a34a;letter-spacing:1px;text-transform:uppercase;">Booking Confirmed</span></td>
           </tr>
         </table>
       </td></tr>
@@ -877,7 +879,7 @@ export async function generateTicketWhatsAppHtml(
     <!-- PRICE SECTION -->
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
       <tr><td style="padding:16px 0 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f3ff;border-radius:12px;padding:14px 16px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f3ff;border-radius:12px;padding:14px 20px;">
           <tr>
             <td style="padding:0 0 10px;font-size:14px;font-weight:700;color:#18181b;">${ticketCount} ${ticketCount === 1 ? 'Ticket' : 'Tickets'}</td>
             <td style="text-align:right;padding:0 0 10px;font-size:14px;font-weight:700;color:#18181b;">€${totalPrice.toFixed(2)}</td>
@@ -902,7 +904,7 @@ export async function generateTicketWhatsAppHtml(
 
   <!-- DARK FOOTER -->
   <tr><td style="padding:18px 24px 20px;background:#1e1b4b;border-radius:0 0 20px 20px;text-align:center;">
-    <div style="margin-bottom:6px;">${footerLogoDataUrl ? `<img src="${footerLogoDataUrl}" alt="TixPass" width="50" height="50" style="display:inline-block;border-radius:8px;" />` : ''}</div>
+    <div style="margin-bottom:6px;">${footerLogoDataUrl ? `<img src="${footerLogoDataUrl}" alt="TixPass" width="60" height="60" style="display:inline-block;border-radius:8px;" />` : ''}</div>
     <div style="font-size:12px;color:#a1a1aa;font-style:italic;">Your ticket. Your experience.</div>
   </td></tr>
 
