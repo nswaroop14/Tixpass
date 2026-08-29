@@ -33,7 +33,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-full flex items-center justify-between">
           <Link href="/" className="flex items-center group">
             <img
-              src="/tixpass-logo.png"
+              src="/tixpass-logo.jpeg"
               alt="TixPass"
               className="h-10 w-auto rounded-md group-hover:scale-105 transition-transform"
             />
@@ -120,7 +120,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             {/* Brand */}
             <div className="md:col-span-2">
               <Link href="/" className="flex items-center gap-2.5 mb-4">
-                <img src="/tixpass-logo.png" alt="TixPass" className="h-10 w-auto rounded-md" />
+                <img src="/tixpass-logo.jpeg" alt="TixPass" className="h-10 w-auto rounded-md" />
               </Link>
               <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-6">
                 The seamless way to discover, book and manage tickets for movies, events and experiences.
