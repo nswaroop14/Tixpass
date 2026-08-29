@@ -14,7 +14,7 @@ import {
 } from "@/hooks/use-organizer";
 import { Button } from "@/components/ui/button";
 import { formatEventDateTime, parseWallClock } from "@/lib/date-utils";
-import { shareTicketImage, generateTicketImage, type TicketImageData } from "@/lib/ticket-image";
+import { shareTicketPdf } from "@/lib/ticket-pdf";
 import { CheckCircle2, Loader2, Plus, Edit3, Trash2, Send, Download, Filter, Ticket, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -195,51 +195,16 @@ export default function OrganizerBookings() {
     if (!row.booking.customerPhone) return;
     setWhatsAppSending(true);
     try {
-      const tickets = await fetchTicketsByBooking.mutateAsync(row.booking.id);
-      if (!tickets || tickets.length === 0) {
-        toast({ title: "Error", description: "No tickets found for this booking", variant: "destructive" });
-        return;
-      }
-
       const phone = row.booking.customerPhone?.replace(/\D/g, '') || '';
-      const ticketDataList: TicketImageData[] = tickets.map((t: any) => ({
-        eventTitle: row.event.title,
-        eventDate: row.event.eventDate,
-        venue: row.event.venue,
-        ticketType: row.event.ticketTypes,
-        ticketCode: t.uniqueTicketCode,
-        ticketId: t.id,
-        screen: row.event.screen,
-        language: row.event.language,
-        subtitle: row.event.subtitle,
-        customerName: row.booking.customerName,
-      }));
-
-      const blob = await generateTicketImage(ticketDataList[0]);
-      const file = new File([blob], `ticket-${ticketDataList[0].ticketCode}.png`, { type: "image/png" });
-
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: `${row.event.title} - Ticket`,
-          text: `Your ticket for ${row.event.title}`,
-          files: [file],
-        });
-      } else if (phone) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `ticket-${ticketDataList[0].ticketCode}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-
-        const phoneMsg = encodeURIComponent(`Here is your ticket for ${row.event.title}. Please find the attached image.`);
+      const success = await shareTicketPdf(row.booking.id, row.event.title);
+      if (!success && phone) {
+        const phoneMsg = encodeURIComponent(`Your ticket for ${row.event.title} is confirmed!\n\nPlease check your email for the ticket PDF.`);
         window.open(`https://wa.me/${phone}?text=${phoneMsg}`, "_blank");
-
-        toast({ title: "Image downloaded", description: "Ticket image downloaded. Attach it in the WhatsApp chat." });
+        toast({ title: "PDF downloaded", description: "Ticket PDF downloaded. Attach it in the WhatsApp chat." });
       }
     } catch (err: any) {
       console.error('WhatsApp share error:', err);
-      toast({ title: "Error", description: err?.message || "Failed to generate ticket image", variant: "destructive" });
+      toast({ title: "Error", description: err?.message || "Failed to generate ticket PDF", variant: "destructive" });
     } finally {
       setWhatsAppSending(false);
     }

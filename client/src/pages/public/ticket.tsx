@@ -3,7 +3,10 @@ import { PublicLayout } from "@/components/layout/public-layout";
 import { usePublicTicket } from "@/hooks/use-public";
 import { QRCodeSVG } from "qrcode.react";
 import { formatEventDate, formatEventTime } from "@/lib/date-utils";
+import { downloadTicketPdf } from "@/lib/ticket-pdf";
 import { Calendar, MapPin, Loader2, AlertCircle, User, Check, Ticket } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function PublicTicket() {
   const [, params] = useRoute("/ticket/:ticketId");
@@ -42,6 +45,18 @@ export default function PublicTicket() {
 
   const { ticket, event } = data;
   const isScanned = ticket.scanStatus === "scanned";
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      await downloadTicketPdf(ticket.id, `TixPass-Ticket-${ticket.uniqueTicketCode}.pdf`);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <PublicLayout>
@@ -174,6 +189,24 @@ export default function PublicTicket() {
 
           {/* Show this at entry */}
           <p className="text-center text-xs text-gray-400 mt-4">Show this QR code at the venue entrance</p>
+
+          {/* Download PDF Button */}
+          <div className="mt-4">
+            <Button
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {downloading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating PDF...
+                </>
+              ) : (
+                "Download Ticket PDF"
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </PublicLayout>
