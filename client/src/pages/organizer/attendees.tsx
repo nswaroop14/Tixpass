@@ -18,14 +18,16 @@ export default function AttendeeList(props: { id?: string }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const params = useParams();
-  const eventId = props.id || params?.id || "";
-  const { data: attendees, isLoading, isRefetching, error } = useEventTickets(eventId);
+  const eventId = (props?.id || params?.id || "") as string;
+  // Ensure eventId is always a string to avoid ReferenceError
+  const safeEventId = eventId || "";
+  const { data: attendees, isLoading, isRefetching, error } = useEventTickets(safeEventId);
   const deleteBooking = useDeleteBooking();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "scanned" | "unused">("all");
 
   const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: [api.organizer.events.tickets.path, eventId] });
+    queryClient.invalidateQueries({ queryKey: [api.organizer.events.tickets.path, safeEventId] });
   };
 
   const filteredAttendees = useMemo(() => {
@@ -57,7 +59,7 @@ export default function AttendeeList(props: { id?: string }) {
     };
   }, [attendees]);
 
-  if (!eventId) {
+  if (!safeEventId) {
     return (
       <DashboardLayout role="organizer">
         <div className="max-w-2xl mx-auto py-20 text-center">
@@ -241,7 +243,7 @@ export default function AttendeeList(props: { id?: string }) {
                         onClick={async () => {
                           if (!window.confirm("Delete this attendee's booking? This frees tickets for the event.")) return;
                           try {
-                            await deleteBooking.mutateAsync({ id: item.booking.id, eventId });
+                            await deleteBooking.mutateAsync({ id: item.booking.id, eventId: safeEventId });
                             toast({ title: "Deleted", description: "Attendee booking removed and capacity updated." });
                           } catch (err: any) {
                             toast({ title: "Error", description: err.message || "Failed to delete booking", variant: "destructive" });
