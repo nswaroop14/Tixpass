@@ -6,13 +6,61 @@ import { sendTicketsEmail, sendActivationEmail, sendPasswordResetEmail, sendAdmi
 import { sendDailyBookingsReportEmail } from "./email.js";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs"; // Switched to bcryptjs for serverless compatibility
+import bcrypt from "bcryptjs";
 import QRCode from "qrcode";
 import { db } from "./db.js";
 import { organizers } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
+import rateLimit from "express-rate-limit";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "super-secret-fallback";
+import { escapeHtml, isValidPaypalClientId, isSafeUrl, isSafePaymentUrl, isSafeImageUrl } from "./security.js";
+
+const SESSION_SECRET_RAW = process.env.SESSION_SECRET;
+if (!SESSION_SECRET_RAW || SESSION_SECRET_RAW.length < 32) {
+  throw new Error("FATAL: SESSION_SECRET must be set and at least 32 characters long");
+}
+const JWT_SECRET = SESSION_SECRET_RAW;
+
+// Rate limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: "Too many attempts, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const bookingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: { message: "Too many requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { message: "Too many admin requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const publicWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: "Too many requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const scanLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  message: { message: "Too many scan requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -50,39 +98,7 @@ export async function registerRoutes(
       }
     }
   }
-  // Seed Admin User
-  const seedDatabase = async () => {
-    try {
-      console.log('Checking for admin user...');
-      // We wrap this in another try/catch to ensure individual query failures don't stop the flow
-      const existingAdmin = await storage.getUserByEmail('admin@test.com').catch(e => {
-        console.error('Error fetching admin user during seed:', e);
-        return undefined;
-      });
-
-      if (!existingAdmin) {
-        console.log('Admin user not found, seeding...');
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        try {
-          await storage.createUser({
-            email: 'admin@test.com',
-            password: hashedPassword,
-            role: 'admin'
-          });
-          console.log('Seeded admin user: admin@test.com / admin123');
-        } catch (e) {
-          console.error('Error creating admin user during seed:', e);
-        }
-      } else {
-        console.log('Admin user already exists.');
-      }
-    } catch (err) {
-      console.error('Database error during seeding (skipping):', err);
-    }
-  };
-  
-  // Non-blocking seeding
-  seedDatabase().catch(err => console.error("Critical seeding error:", err));
+  // Admin user must be created manually via database — no auto-seeding of credentials
 
   // Authentication Middleware
   const authenticateToken = (req: any, res: any, next: any) => {
@@ -114,7 +130,7 @@ export async function registerRoutes(
   if (LOGIN_METHOD !== "POST") {
     console.warn("Unexpected login method from shared routes, defaulting to POST.");
   }
-  app.post(LOGIN_PATH, async (req, res) => {
+  app.post(LOGIN_PATH, authLimiter, async (req, res) => {
     try {
       console.log('Login attempt for:', req.body.email);
       const input = api.auth.login.input.parse(req.body);
@@ -151,8 +167,7 @@ export async function registerRoutes(
         res.status(400).json({ message: err.errors[0].message });
       } else {
         res.status(500).json({ 
-          message: "Internal server error", 
-          details: err instanceof Error ? err.message : String(err) 
+          message: "Internal server error"
         });
       }
     }
@@ -196,7 +211,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.admin.organizerApplications.approve.path, authenticateToken, requireAdmin, async (req, res) => {
+  app.post(api.admin.organizerApplications.approve.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const result = await storage.approveOrganizerApplication(req.params.id);
       if (!result) return res.status(404).json({ message: "Application not found" });
@@ -207,7 +222,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.admin.organizerApplications.reject.path, authenticateToken, requireAdmin, async (req, res) => {
+  app.post(api.admin.organizerApplications.reject.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const input = api.admin.organizerApplications.reject.input.parse(req.body);
       const updated = await storage.rejectOrganizerApplication(req.params.id, input.reason);
@@ -222,7 +237,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.admin.organizers.create.path, authenticateToken, requireAdmin, async (req, res) => {
+  app.post(api.admin.organizers.create.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const input = api.admin.organizers.create.input.parse(req.body);
       
@@ -248,7 +263,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.admin.organizers.resetPassword.path, authenticateToken, requireAdmin, async (req, res) => {
+  app.post(api.admin.organizers.resetPassword.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const input = api.admin.organizers.resetPassword.input.parse(req.body);
       const organizer = await storage.getOrganizerByUserId(req.params.id);
@@ -275,7 +290,7 @@ export async function registerRoutes(
       }
     }
   });
-  app.patch(api.admin.organizers.updateStatus.path, authenticateToken, requireAdmin, async (req, res) => {
+  app.patch(api.admin.organizers.updateStatus.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const input = api.admin.organizers.updateStatus.input.parse(req.body);
       const updated = await storage.updateOrganizerStatus(req.params.id, input.status);
@@ -288,7 +303,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.admin.organizers.delete.path, authenticateToken, requireAdmin, async (req, res) => {
+  app.delete(api.admin.organizers.delete.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     await storage.deleteOrganizer(req.params.id);
     res.status(204).send();
   });
@@ -298,7 +313,7 @@ export async function registerRoutes(
     const ADMIN_REPAIR_ORG_SCHEMA = api?.admin?.maintenance?.repairOrganizer?.input ?? z.object({
       organizerEmail: z.string().email(),
     });
-    app.post(ADMIN_REPAIR_ORG_PATH, authenticateToken, requireAdmin, async (req, res) => {
+    app.post(ADMIN_REPAIR_ORG_PATH, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
       try {
         const input = ADMIN_REPAIR_ORG_SCHEMA.parse(req.body);
         const user = await storage.getUserByEmail(input.organizerEmail);
@@ -364,8 +379,8 @@ export async function registerRoutes(
     routingNumber: z.string().optional(),
     accountType: z.string().optional(),
     paymentMethod: z.enum(['bank','link','paypal','revolut']).optional(),
-    paymentLink: z.string().optional(),
-    paypalClientId: z.string().optional(),
+    paymentLink: z.string().refine(v => !v || isSafePaymentUrl(v), { message: "Invalid payment link URL" }).optional(),
+    paypalClientId: z.string().refine(v => !v || isValidPaypalClientId(v), { message: "Invalid PayPal Client ID format" }).optional(),
     paymentNumber: z.string().optional(),
     referenceCode: z.string().optional(),
   });
@@ -406,6 +421,9 @@ export async function registerRoutes(
   app.post(api.organizer.events.create.path, authenticateToken, requireOrganizer, async (req: any, res) => {
     try {
       const input = api.organizer.events.create.input.parse(req.body);
+      if (input.bannerUrl && !isSafeImageUrl(input.bannerUrl)) {
+        return res.status(400).json({ message: "Invalid banner image URL" });
+      }
       const org = await storage.getOrganizerByUserId(req.user.id);
       if (!org) return res.status(404).json({ message: "Organizer not found" });
 
@@ -427,6 +445,9 @@ export async function registerRoutes(
   app.put(api.organizer.events.update.path, authenticateToken, requireOrganizer, async (req, res) => {
     try {
       const input = api.organizer.events.update.input.parse(req.body);
+      if (input.bannerUrl && !isSafeImageUrl(input.bannerUrl)) {
+        return res.status(400).json({ message: "Invalid banner image URL" });
+      }
       const org = await storage.getOrganizerByUserId((req as any).user.id);
       const existing = await storage.getEvent(req.params.id);
       if (!org || !existing || existing.organizerId !== org.id) {
@@ -446,9 +467,20 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.organizer.events.delete.path, authenticateToken, requireOrganizer, async (req, res) => {
-    await storage.deleteEvent(req.params.id);
-    res.status(204).send();
+  app.delete(api.organizer.events.delete.path, authenticateToken, requireOrganizer, async (req: any, res) => {
+    try {
+      const org = await storage.getOrganizerByUserId(req.user.id);
+      if (!org) return res.status(404).json({ message: "Organizer not found" });
+      const event = await storage.getEvent(req.params.id);
+      if (!event || event.organizerId !== org.id) {
+        return res.status(404).json({ message: "Event not found or access denied" });
+      }
+      await storage.deleteEvent(req.params.id);
+      res.status(204).send();
+    } catch (err) {
+      console.error("Error deleting event:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.get(api.organizer.events.tickets.path, authenticateToken, requireOrganizer, async (req: any, res) => {
@@ -775,7 +807,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.post(api.organizer.tickets.scan.path, authenticateToken, requireOrganizer, async (req: any, res) => {
+  app.post(api.organizer.tickets.scan.path, authenticateToken, requireOrganizer, scanLimiter, async (req: any, res) => {
     try {
       const input = api.organizer.tickets.scan.input.parse(req.body);
       
@@ -891,7 +923,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
   });
 
   // --- PUBLIC ROUTES ---
-  app.post(api.public.organizer.apply.path, async (req, res) => {
+  app.post(api.public.organizer.apply.path, publicWriteLimiter, async (req, res) => {
     try {
       const input = api.public.organizer.apply.input.parse(req.body);
       const appRow = await storage.createOrganizerApplication(input);
@@ -905,7 +937,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.post(api.organizer.account.resetPassword.path, authenticateToken, requireOrganizer, async (req: any, res) => {
+  app.post(api.organizer.account.resetPassword.path, authenticateToken, requireOrganizer, authLimiter, async (req: any, res) => {
     try {
       const input = api.organizer.account.resetPassword.input.parse(req.body);
       const user = await storage.getUser(req.user.id);
@@ -1014,6 +1046,9 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       const org = await storage.getOrganizerByUserId(req.user.id);
       if (!org) return res.status(404).json({ message: "Organizer not found" });
       const { brandName, logoUrl, phone } = req.body;
+      if (logoUrl && !isSafeImageUrl(logoUrl)) {
+        return res.status(400).json({ message: "Invalid logo image URL" });
+      }
       await db.update(organizers).set({
         brandName: brandName ?? org.brandName,
         logoUrl: logoUrl ?? org.logoUrl,
@@ -1082,8 +1117,8 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     routingNumber: z.string().min(2),
     accountType: z.string().optional(),
     paymentMethod: z.enum(['bank','link','paypal','revolut']).optional(),
-    paymentLink: z.string().optional(),
-    paypalClientId: z.string().optional(),
+    paymentLink: z.string().refine(v => !v || isSafePaymentUrl(v), { message: "Invalid payment link URL" }).optional(),
+    paypalClientId: z.string().refine(v => !v || isValidPaypalClientId(v), { message: "Invalid PayPal Client ID format" }).optional(),
     paymentNumber: z.string().optional(),
     referenceCode: z.string().optional(),
   });
@@ -1149,7 +1184,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     if (!data) return res.status(404).json({ message: "Bank details not found" });
     res.status(200).json(data);
   });
-  app.post(PUBLIC_BOOKINGS_CREATE_PATH, async (req, res) => {
+  app.post(PUBLIC_BOOKINGS_CREATE_PATH, bookingLimiter, async (req, res) => {
     try {
       // Coerce ticketQuantity to number
       const bodySchema = PUBLIC_BOOKINGS_CREATE_SCHEMA;
@@ -1170,7 +1205,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.post(PUBLIC_BOOKINGS_SUBMIT_PAYMENT_PATH, async (req, res) => {
+  app.post(PUBLIC_BOOKINGS_SUBMIT_PAYMENT_PATH, bookingLimiter, async (req, res) => {
     try {
       const input = PUBLIC_BOOKINGS_SUBMIT_PAYMENT_SCHEMA.parse(req.body);
       const updated = await storage.submitPayment(req.params.id, input.transactionReference);
@@ -1183,7 +1218,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.post(api.public.bookings.confirmPayPal.path, async (req, res) => {
+  app.post(api.public.bookings.confirmPayPal.path, bookingLimiter, async (req, res) => {
     try {
       const { id } = req.params;
       const input = api.public.bookings.confirmPayPal.input.parse(req.body);

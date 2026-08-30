@@ -111,8 +111,14 @@ export default function PublicEvent() {
       };
 
       if (!(window as any).paypal && bank.paypalClientId) {
+        // Validate PayPal Client ID format client-side before loading
+        const paypalIdPattern = /^[A-Za-z0-9_-]{10,256}$/;
+        if (!paypalIdPattern.test(bank.paypalClientId)) {
+          if (isMounted) setPaypalError("Invalid PayPal configuration.");
+          return;
+        }
         script = document.createElement("script");
-        script.src = `https://www.paypal.com/sdk/js?client-id=${bank.paypalClientId}&components=hosted-buttons`;
+        script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(bank.paypalClientId)}&components=hosted-buttons`;
         script.async = true;
         script.crossOrigin = "anonymous";
         script.onload = () => {

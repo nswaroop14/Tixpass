@@ -4,6 +4,7 @@ import { Booking, Event, Ticket } from '../shared/schema.js';
 import fs from 'fs';
 import path from 'path';
 import QRCode from 'qrcode';
+import { escapeHtml, escapeAttr, isSafeUrl } from './security.js';
 
 const FROM_EMAIL = 'bookings@tix-pass.com';
 
@@ -29,7 +30,7 @@ export async function sendActivationEmail(toEmail: string, organizerName: string
       subject: 'Your Organizer Account is Activated',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #fafafa;">
-          <h2 style="color: #000; text-align: center;">Welcome, ${organizerName}!</h2>
+          <h2 style="color: #000; text-align: center;">Welcome, ${escapeHtml(organizerName)}!</h2>
           <p style="text-align: center; font-size: 16px;">Your organizer account has been approved and activated.</p>
           <p style="text-align: center;">You can log in here:</p>
           <p style="text-align: center; margin-top: 10px;">
@@ -52,18 +53,18 @@ export async function sendEventBankUpdateEmail(toEmail: string, organizerName: s
     await resend.emails.send({
       from: FROM_EMAIL,
       to: toEmail,
-      subject: `Bank Details Updated – ${eventLabel}`,
+      subject: `Bank Details Updated – ${escapeHtml(eventLabel)}`,
       html: `
         <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 12px; background-color: #fafafa;">
           <h2 style="color: #000; text-align: center; margin-bottom: 12px;">Bank Details Changed</h2>
-          <p style="text-align: center; margin: 0 0 18px 0;">${organizerName} • ${eventLabel}</p>
+          <p style="text-align: center; margin: 0 0 18px 0;">${escapeHtml(organizerName)} • ${escapeHtml(eventLabel)}</p>
           <p style="text-align:center; font-size:12px; color:#666;">Changed at: ${changedAt.toLocaleString()}</p>
           <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:16px; margin-top:12px;">
-            <p><strong>Bank Name:</strong> ${details.bankName || "—"}</p>
-            <p><strong>Account Holder:</strong> ${details.accountHolder || "—"}</p>
-            <p><strong>Account Number:</strong> ${details.accountNumber || "—"}</p>
-            <p><strong>Routing Number:</strong> ${details.routingNumber || "—"}</p>
-            <p><strong>Account Type:</strong> ${details.accountType || "—"}</p>
+            <p><strong>Bank Name:</strong> ${escapeHtml(details.bankName) || "—"}</p>
+            <p><strong>Account Holder:</strong> ${escapeHtml(details.accountHolder) || "—"}</p>
+            <p><strong>Account Number:</strong> ${escapeHtml(details.accountNumber) || "—"}</p>
+            <p><strong>Routing Number:</strong> ${escapeHtml(details.routingNumber) || "—"}</p>
+            <p><strong>Account Type:</strong> ${escapeHtml(details.accountType) || "—"}</p>
           </div>
           <p style="text-align:center; font-size:12px; color:#999; margin-top: 18px;">If you did not make this change, please contact support immediately.</p>
         </div>
@@ -85,7 +86,7 @@ export async function sendPasswordResetEmail(toEmail: string, organizerName: str
       subject: 'Your Organizer Password Has Been Reset',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #fafafa;">
-          <h2 style="color: #000; text-align: center;">Hi ${organizerName},</h2>
+          <h2 style="color: #000; text-align: center;">Hi ${escapeHtml(organizerName)},</h2>
           <p style="text-align: center; font-size: 16px;">Your organizer account password has been reset.</p>
           <div style="margin: 20px auto; max-width: 360px; padding: 12px; border: 1px dashed #999; border-radius: 8px; background:#fff; text-align:center;">
             <p style="margin:0 0 6px 0; font-size: 12px; color: #666;">Temporary Password</p>
@@ -169,7 +170,7 @@ export async function generateTicketEmailHtml(
   const ticketPrice = event.ticketPrice / 100;
   const totalPrice = ticketPrice * ticketCount;
   const { dateStr, timeStr } = formatWallClockDateParts(event.eventDate);
-  const customerGreeting = customerName ? `Hi ${customerName},` : "Hi there,";
+  const customerGreeting = customerName ? `Hi ${escapeHtml(customerName)},` : "Hi there,";
   const ticketCode = tickets.length > 0 ? tickets[0].uniqueTicketCode : "";
 
   const useDataUrls = options?.useDataUrls ?? false;
@@ -195,7 +196,7 @@ export async function generateTicketEmailHtml(
   const footerLogoRef = useDataUrls && footerLogoDataUrl ? footerLogoDataUrl : 'cid:footer-logo';
 
   let qrDataUrl = '';
-  if (useDataUrls) {
+  if (useDataUrls && ticketCode) {
     try {
       qrDataUrl = await QRCode.toDataURL(ticketCode, {
         width: 200,
@@ -204,17 +205,18 @@ export async function generateTicketEmailHtml(
       });
     } catch {}
   }
-  const qrSrc = qrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketCode)}`;
+  // Always use local QR endpoint instead of external API
+  const qrSrc = qrDataUrl || `${APP_URL}/api/public/qr/${encodeURIComponent(ticketCode)}`;
 
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
 
   if (bannerUrl.startsWith('data:')) {
     const posterRef = useDataUrls ? bannerUrl : 'cid:event-poster';
-    posterHtml = `<img src="${posterRef}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
+    posterHtml = `<img src="${posterRef}" alt="${escapeAttr(event.title)}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
   } else if (bannerUrl.startsWith('http')) {
     const posterRef = useDataUrls ? bannerUrl : 'cid:event-poster';
-    posterHtml = `<img src="${posterRef}" alt="${event.title}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
+    posterHtml = `<img src="${posterRef}" alt="${escapeAttr(event.title)}" width="520" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;" />`;
   }
 
   if (!posterHtml) {
@@ -254,8 +256,8 @@ export async function generateTicketEmailHtml(
 
           <!-- EVENT INFO -->
           <tr><td style="padding:24px 28px 0 28px;text-align:center;">
-            <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${event.title}</div>
-            <div style="font-size:13px;color:#71717a;font-weight:500;letter-spacing:0.3px;">${event.ticketTypes}</div>
+            <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(event.title)}</div>
+            <div style="font-size:13px;color:#71717a;font-weight:500;letter-spacing:0.3px;">${escapeHtml(event.ticketTypes)}</div>
           </td></tr>
 
           <!-- SHOW INFO GRID -->
@@ -275,24 +277,24 @@ export async function generateTicketEmailHtml(
                 <td width="34%" style="padding:14px 8px;text-align:center;border-bottom:1px solid #e5e7eb;">
                   ${event.screen ? `<div style="font-size:20px;margin-bottom:4px;">🎬</div>
                   <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SCREEN</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.screen}</div>` : '&nbsp;'}
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.screen)}</div>` : '&nbsp;'}
                 </td>
               </tr>
               <tr>
                 <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;">
                   <div style="font-size:20px;margin-bottom:4px;">📍</div>
                   <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">VENUE</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.venue}</div>
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.venue)}</div>
                 </td>
                 <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;">
                   ${event.language ? `<div style="font-size:20px;margin-bottom:4px;">🌐</div>
                   <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">AUDIO</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.language}</div>` : '&nbsp;'}
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.language)}</div>` : '&nbsp;'}
                 </td>
                 <td width="34%" style="padding:14px 8px;text-align:center;">
                   ${event.subtitle ? `<div style="font-size:20px;margin-bottom:4px;">💬</div>
                   <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SUBTITLES</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${event.subtitle}</div>` : '&nbsp;'}
+                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.subtitle)}</div>` : '&nbsp;'}
                 </td>
               </tr>
             </table>
@@ -313,7 +315,7 @@ export async function generateTicketEmailHtml(
           <tr><td style="padding:20px 28px 0 28px;text-align:center;">
             <div style="font-size:11px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Tickets</div>
             <div style="font-size:16px;font-weight:700;color:#18181b;">${ticketCount} ${ticketCount === 1 ? 'Ticket' : 'Tickets'}</div>
-            <div style="font-size:13px;color:#71717a;margin-top:2px;">${event.ticketTypes}</div>
+            <div style="font-size:13px;color:#71717a;margin-top:2px;">${escapeHtml(event.ticketTypes)}</div>
           </td></tr>
 
           <!-- QR CODE -->
@@ -374,7 +376,7 @@ export async function generateTicketEmailHtml(
               ${event.notes.split("\n").filter((n: string) => n.trim()).map((note: string) => `
               <tr>
                 <td style="padding:3px 0;font-size:13px;color:#52525b;line-height:1.5;vertical-align:top;width:16px;">•</td>
-                <td style="padding:3px 0;font-size:13px;color:#52525b;line-height:1.5;">${note.trim()}</td>
+                <td style="padding:3px 0;font-size:13px;color:#52525b;line-height:1.5;">${escapeHtml(note.trim())}</td>
               </tr>
               `).join('')}
             </table>
@@ -482,7 +484,7 @@ export async function sendTicketsEmail(
     const result = await resend.emails.send({
       from: `TixPass <${FROM_EMAIL}>`,
       to: customerEmail,
-      subject: `🎬 Booking Confirmed — ${event.title} | TixPass`,
+      subject: `🎬 Booking Confirmed — ${escapeHtml(event.title)} | TixPass`,
       html,
       attachments,
     });
@@ -521,11 +523,11 @@ export async function sendDailyBookingsReportEmail(toEmail: string, organizerNam
     await resend.emails.send({
       from: FROM_EMAIL,
       to: toEmail,
-      subject: `Daily Bookings Report – ${dateLabel}`,
+      subject: `Daily Bookings Report – ${escapeHtml(dateLabel)}`,
       html: `
         <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 12px; background-color: #fafafa;">
           <h2 style="color: #000; text-align: center; margin-bottom: 12px;">Daily Bookings Report</h2>
-          <p style="text-align: center; margin: 0 0 18px 0;">${organizerName} • ${dateLabel}</p>
+          <p style="text-align: center; margin: 0 0 18px 0;">${escapeHtml(organizerName)} • ${escapeHtml(dateLabel)}</p>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom: 20px;">
             <div style="background:#fff; border:1px solid #eee; border-radius:10px; padding:12px; text-align:center;">
               <div style="font-size:12px; color:#666;">Total</div>
@@ -603,7 +605,7 @@ export async function generateTicketPdfHtml(
   <div style="margin-top:10px;padding:8px 10px;background:#fefce8;border-radius:6px;border:1px solid #fef08a;">
     <div style="font-size:8px;font-weight:700;color:#a16207;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Important Information</div>
     ${event.notes.split("\n").filter((n: string) => n.trim()).map((note: string) =>
-      `<div style="font-size:8px;color:#713f12;line-height:1.5;padding:1px 0;">&#8226; ${note.trim()}</div>`
+      `<div style="font-size:8px;color:#713f12;line-height:1.5;padding:1px 0;">&#8226; ${escapeHtml(note.trim())}</div>`
     ).join('')}
   </div>` : '';
 
@@ -634,9 +636,9 @@ export async function generateTicketPdfHtml(
       <tr>
         <td width="80" valign="top" style="padding-right:14px;">${posterHtml}</td>
         <td valign="top">
-          <div style="font-size:18px;font-weight:800;color:#18181b;line-height:1.25;margin-bottom:4px;">${event.title}</div>
-          <div style="font-size:11px;color:#71717a;font-weight:500;">${event.ticketTypes}</div>
-          ${event.language ? `<div style="font-size:11px;color:#71717a;margin-top:3px;">${event.language}${event.subtitle ? ` · ${event.subtitle}` : ''}</div>` : ''}
+          <div style="font-size:18px;font-weight:800;color:#18181b;line-height:1.25;margin-bottom:4px;">${escapeHtml(event.title)}</div>
+          <div style="font-size:11px;color:#71717a;font-weight:500;">${escapeHtml(event.ticketTypes)}</div>
+          ${event.language ? `<div style="font-size:11px;color:#71717a;margin-top:3px;">${escapeHtml(event.language)}${event.subtitle ? ` · ${escapeHtml(event.subtitle)}` : ''}</div>` : ''}
         </td>
       </tr>
     </table>
@@ -658,8 +660,8 @@ export async function generateTicketPdfHtml(
       <tr>
         <td colspan="2" style="padding:6px 14px 10px;border-top:1px solid #e5e7eb;">
           <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;">Venue</div>
-          <div style="font-size:13px;font-weight:700;color:#18181b;">${event.venue}</div>
-          ${event.screen ? `<div style="font-size:10px;color:#71717a;margin-top:2px;">Screen ${event.screen}</div>` : ''}
+          <div style="font-size:13px;font-weight:700;color:#18181b;">${escapeHtml(event.venue)}</div>
+          ${event.screen ? `<div style="font-size:10px;color:#71717a;margin-top:2px;">Screen ${escapeHtml(event.screen)}</div>` : ''}
         </td>
       </tr>
     </table>
@@ -823,15 +825,15 @@ export async function generateTicketWhatsAppHtml(
       <tr>
         <td width="110" valign="top" style="padding:18px 16px 18px 0;">${posterHtml}</td>
         <td valign="top" style="padding:18px 0;">
-          <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:10px;">${event.title}</div>
+          <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:10px;">${escapeHtml(event.title)}</div>
           <table role="presentation" cellspacing="0" cellpadding="0" border="0">
             <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128197;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${dateStr}</td></tr>
             <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128336;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${timeStr}</td></tr>
-            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128205;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${event.venue}</td></tr>
-            ${event.screen ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128246;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Screen ${event.screen}</td></tr>` : ''}
-            ${event.language ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Audio: ${event.language}</td></tr>` : ''}
-            ${event.subtitle ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128172;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Subtitles: ${event.subtitle}</td></tr>` : ''}
-            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${event.ticketTypes}</td></tr>
+            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128205;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${escapeHtml(event.venue)}</td></tr>
+            ${event.screen ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128246;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Screen ${escapeHtml(event.screen)}</td></tr>` : ''}
+            ${event.language ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Audio: ${escapeHtml(event.language)}</td></tr>` : ''}
+            ${event.subtitle ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128172;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Subtitles: ${escapeHtml(event.subtitle)}</td></tr>` : ''}
+            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${escapeHtml(event.ticketTypes)}</td></tr>
           </table>
         </td>
       </tr>

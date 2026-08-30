@@ -54,6 +54,7 @@ export default function TicketLink() {
     <div style={{ background: "#f0f0f3", minHeight: "100vh", display: "flex", justifyContent: "center" }}>
       <iframe
         ref={iframeRef}
+        sandbox="allow-same-origin"
         style={{ border: "none", width: "380px", minHeight: "100vh" }}
         title="Ticket"
       />
