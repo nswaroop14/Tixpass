@@ -819,14 +819,30 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       
       const ticket = await storage.getTicketByCode(input.uniqueTicketCode);
       if (!ticket) {
-        return res.status(404).json({ message: "Invalid ticket", status: "invalid" });
+        return res.status(404).json({ message: "Ticket no longer exists", status: "invalid" });
+      }
+
+      if (ticket.deletedAt) {
+        return res.status(404).json({ message: "Ticket no longer exists", status: "invalid" });
       }
 
       const org = await storage.getOrganizerByUserId(req.user.id);
       const event = await storage.getEvent(ticket.eventId);
       
-      if (!event || event.organizerId !== org?.id) {
+      if (!event) {
+        return res.status(404).json({ message: "Event no longer exists", status: "invalid" });
+      }
+
+      if (event.organizerId !== org?.id) {
         return res.status(404).json({ message: "Invalid ticket for this organizer", status: "invalid" });
+      }
+
+      if (event.status === "paused") {
+        return res.status(403).json({ message: "Event is paused", status: "paused" });
+      }
+
+      if (event.deletedAt) {
+        return res.status(404).json({ message: "Event no longer exists", status: "invalid" });
       }
 
       if (ticket.scanStatus === 'scanned') {
@@ -835,11 +851,18 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
 
       await storage.updateTicketStatus(ticket.id, 'scanned');
 
+      const booking = await storage.getBooking(ticket.bookingId);
+
       res.status(200).json({ 
         message: "Entry allowed", 
         status: "valid",
-        eventId: event.id,
-        eventTitle: event.title
+        ticketNumber: ticket.uniqueTicketCode,
+        eventTitle: event.title,
+        eventDate: event.eventDate,
+        eventVenue: event.venue,
+        eventScreen: event.screen,
+        ticketType: event.ticketTypes,
+        customerName: booking?.customerName || "Guest"
       });
     } catch (err) {
       if (err instanceof z.ZodError) {

@@ -278,9 +278,20 @@ export const api = {
         path: '/api/organizer/tickets/scan' as const,
         input: z.object({ uniqueTicketCode: z.string() }),
         responses: {
-          200: z.object({ message: z.string(), status: z.string() }),
+          200: z.object({ 
+            message: z.string(), 
+            status: z.string(),
+            ticketNumber: z.string().optional(),
+            eventTitle: z.string().optional(),
+            eventDate: z.string().optional(),
+            eventVenue: z.string().optional(),
+            eventScreen: z.string().optional(),
+            ticketType: z.string().optional(),
+            customerName: z.string().optional(),
+          }),
           400: z.object({ message: z.string(), status: z.string() }),
-          404: errorSchemas.notFound
+          403: z.object({ message: z.string(), status: z.string() }),
+          404: z.object({ message: z.string(), status: z.string() }),
         }
       }
     }

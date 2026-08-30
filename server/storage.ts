@@ -562,7 +562,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTicketByCode(uniqueTicketCode: string): Promise<Ticket | undefined> {
-    const [ticket] = await db.select().from(tickets).where(eq(tickets.uniqueTicketCode, uniqueTicketCode));
+    const [ticket] = await db.select().from(tickets).where(and(eq(tickets.uniqueTicketCode, uniqueTicketCode), isNull(tickets.deletedAt)));
     return ticket;
   }
 
@@ -571,7 +571,7 @@ export class DatabaseStorage implements IStorage {
       .select({ ticket: tickets, event: events })
       .from(tickets)
       .innerJoin(events, eq(tickets.eventId, events.id))
-      .where(eq(tickets.uniqueTicketCode, uniqueTicketCode));
+      .where(and(eq(tickets.uniqueTicketCode, uniqueTicketCode), isNull(tickets.deletedAt)));
     return result;
   }
 

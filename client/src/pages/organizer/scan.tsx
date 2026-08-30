@@ -18,6 +18,12 @@ export default function OrganizerScan() {
     timestamp: number;
     eventId?: string;
     eventTitle?: string;
+    ticketNumber?: string;
+    eventDate?: string;
+    eventVenue?: string;
+    eventScreen?: string;
+    ticketType?: string;
+    customerName?: string;
   } | null>(null);
   const isProcessingRef = useRef(false);
 
@@ -47,6 +53,12 @@ export default function OrganizerScan() {
         timestamp: Date.now(),
         eventId: res.eventId,
         eventTitle: res.eventTitle,
+        ticketNumber: res.ticketNumber,
+        eventDate: res.eventDate,
+        eventVenue: res.eventVenue,
+        eventScreen: res.eventScreen,
+        ticketType: res.ticketType,
+        customerName: res.customerName,
       });
 
       if (res.eventId) {
@@ -138,6 +150,42 @@ export default function OrganizerScan() {
                   <p className={`text-sm font-mono break-all ${lastScan.status === "success" ? "text-emerald-700" : "text-red-700"}`}>
                     {lastScan.code}
                   </p>
+
+                  {/* Ticket Details on Success */}
+                  {lastScan.status === "success" && (
+                    <div className="mt-4 bg-white rounded-xl border border-emerald-100 p-4 text-left space-y-2">
+                      {lastScan.ticketNumber && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Ticket</span>
+                          <span className="text-sm font-bold text-gray-900 font-mono">{lastScan.ticketNumber}</span>
+                        </div>
+                      )}
+                      {lastScan.customerName && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Guest</span>
+                          <span className="text-sm font-semibold text-gray-900">{lastScan.customerName}</span>
+                        </div>
+                      )}
+                      {lastScan.eventVenue && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Venue</span>
+                          <span className="text-sm font-semibold text-gray-900">{lastScan.eventVenue}{lastScan.eventScreen ? ` · Screen ${lastScan.eventScreen}` : ''}</span>
+                        </div>
+                      )}
+                      {lastScan.eventDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Date</span>
+                          <span className="text-sm font-semibold text-gray-900">{new Date(lastScan.eventDate).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                      {lastScan.ticketType && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Type</span>
+                          <span className="text-sm font-semibold text-gray-900">{lastScan.ticketType}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-center gap-4 mt-4">
                     <Button
