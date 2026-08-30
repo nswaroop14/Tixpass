@@ -1208,7 +1208,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
   app.post(PUBLIC_BOOKINGS_SUBMIT_PAYMENT_PATH, bookingLimiter, async (req, res) => {
     try {
       const input = PUBLIC_BOOKINGS_SUBMIT_PAYMENT_SCHEMA.parse(req.body);
-      const updated = await storage.submitPayment(req.params.id, input.transactionReference);
+      const updated = await storage.submitPayment(String(req.params.id), input.transactionReference);
       if (!updated) {
         return res.status(404).json({ message: "Booking not found" });
       }
@@ -1221,24 +1221,25 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
   app.post(api.public.bookings.confirmPayPal.path, bookingLimiter, async (req, res) => {
     try {
       const { id } = req.params;
+      const bookingId = String(id);
       const input = api.public.bookings.confirmPayPal.input.parse(req.body);
-      console.log(`[PayPal] Confirming payment for booking ${id}, orderID: ${input.orderID}`);
+      console.log(`[PayPal] Confirming payment for booking ${bookingId}, orderID: ${input.orderID}`);
       
-      const booking = await storage.getBooking(id);
+      const booking = await storage.getBooking(bookingId);
       if (!booking) {
-        console.error(`[PayPal] Booking ${id} not found`);
+        console.error(`[PayPal] Booking ${bookingId} not found`);
         return res.status(404).json({ message: "Booking not found" });
       }
 
       // 1. Update status to paid and store orderID
-      console.log(`[PayPal] Updating booking ${id} status to 'paid'`);
+      console.log(`[PayPal] Updating booking ${bookingId} status to 'paid'`);
       const updated = await storage.confirmPayPalPayment(booking.id, input.orderID);
       if (!updated) {
         throw new Error("Failed to update booking status in database");
       }
       
       // 2. Generate tickets
-      console.log(`[PayPal] Generating ${booking.ticketQuantity} tickets for booking ${id}`);
+      console.log(`[PayPal] Generating ${booking.ticketQuantity} tickets for booking ${bookingId}`);
       const tickets = await storage.createTickets(booking.id, booking.eventId, booking.ticketQuantity);
       
       // 3. Fetch event for email context
@@ -1261,7 +1262,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
         }
       }
 
-      console.log(`[PayPal] Booking ${id} confirmed successfully`);
+      console.log(`[PayPal] Booking ${bookingId} confirmed successfully`);
       res.status(200).json(updated);
     } catch (err) {
       console.error('[PayPal] CRITICAL ERROR during confirmation:', err);
