@@ -211,8 +211,8 @@ export async function generateTicketEmailHtml(
 
   const footerLogoImgTag = `<img src="${footerLogoRef}" alt="TixPass" width="160" style="display:inline-block;height:auto;" />`;
 
-  // Generate per-ticket QR sections
-  const ticketSections = await Promise.all(tickets.map(async (ticket, idx) => {
+  // Generate full ticket cards — each ticket is a separate card
+  const ticketCards = await Promise.all(tickets.map(async (ticket, idx) => {
     let qrSrc = '';
     if (useDataUrls) {
       try {
@@ -225,36 +225,98 @@ export async function generateTicketEmailHtml(
     if (!qrSrc) {
       qrSrc = `${APP_URL}/api/public/qr/${encodeURIComponent(ticket.uniqueTicketCode)}`;
     }
-    const isLast = idx === tickets.length - 1;
+
     return `
-    <!-- TICKET ${idx + 1} OF ${ticketCount} -->
-    <tr><td style="padding:${idx === 0 ? '20px' : '0'} 28px 0 28px;text-align:center;">
-      <div style="font-size:11px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;">Ticket ${idx + 1} of ${ticketCount}</div>
-      <div style="font-size:13px;color:#71717a;margin-bottom:16px;">${escapeHtml(event.ticketTypes)}</div>
-    </td></tr>
-    <tr><td style="padding:0 28px;text-align:center;">
-      <div style="display:inline-block;background:#ffffff;border:2px solid #e5e7eb;border-radius:16px;padding:20px;">
-        <img src="${qrSrc}" alt="QR Code for Ticket ${idx + 1}" width="180" height="180" style="display:block;width:180px;height:180px;" />
-      </div>
-      <div style="margin-top:12px;font-size:11px;color:#71717a;letter-spacing:0.3px;">Scan this QR code at the entrance</div>
-    </td></tr>
-    <tr><td style="padding:16px 28px 0 28px;text-align:center;">
-      <div style="display:inline-block;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 20px;">
-        <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:2px;">Ticket Code</div>
-        <div style="font-size:18px;font-weight:800;color:#18181b;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(ticket.uniqueTicketCode)}</div>
-      </div>
-    </td></tr>
-    ${!isLast ? `
-    <!-- PERFORATION BETWEEN TICKETS -->
-    <tr><td style="padding:20px 20px 0 20px;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-        <tr>
-          <td style="border-top:2px dashed #d4d4d8;"></td>
-          <td style="width:24px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:6px;">&#9679; &#9679; &#9679;</td>
-          <td style="border-top:2px dashed #d4d4d8;"></td>
-        </tr>
+    <!-- TICKET CARD ${idx + 1} OF ${ticketCount} -->
+    <tr><td style="padding:${idx === 0 ? '0' : '24px'} 0 0 0;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+        <!-- TICKET HEADER -->
+        <tr><td style="padding:16px 28px;background:#1e1b4b;text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px;">Ticket ${idx + 1} of ${ticketCount}</div>
+          <div style="font-size:18px;font-weight:800;color:#ffffff;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(ticket.uniqueTicketCode)}</div>
+        </td></tr>
+
+        <!-- POSTER -->
+        <tr><td style="padding:0;">
+          ${posterHtml}
+        </td></tr>
+
+        <!-- EVENT INFO -->
+        <tr><td style="padding:20px 28px 0 28px;text-align:center;">
+          <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(event.title)}</div>
+          <div style="font-size:13px;color:#71717a;font-weight:500;letter-spacing:0.3px;">${escapeHtml(event.ticketTypes)}</div>
+        </td></tr>
+
+        <!-- SHOW INFO GRID -->
+        <tr><td style="padding:16px 28px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:12px;">
+            <tr>
+              <td width="33%" style="padding:12px 8px;text-align:center;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">
+                <div style="font-size:18px;margin-bottom:4px;">📅</div>
+                <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">DATE</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${dateStr}</div>
+              </td>
+              <td width="33%" style="padding:12px 8px;text-align:center;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">
+                <div style="font-size:18px;margin-bottom:4px;">⏱</div>
+                <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">TIME</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${timeStr}</div>
+              </td>
+              <td width="34%" style="padding:12px 8px;text-align:center;border-bottom:1px solid #e5e7eb;">
+                ${event.screen ? `<div style="font-size:18px;margin-bottom:4px;">🎬</div>
+                <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SCREEN</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.screen)}</div>` : '&nbsp;'}
+              </td>
+            </tr>
+            <tr>
+              <td width="33%" style="padding:12px 8px;text-align:center;border-right:1px solid #e5e7eb;">
+                <div style="font-size:18px;margin-bottom:4px;">📍</div>
+                <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">VENUE</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.venue)}</div>
+              </td>
+              <td width="33%" style="padding:12px 8px;text-align:center;border-right:1px solid #e5e7eb;">
+                ${event.language ? `<div style="font-size:18px;margin-bottom:4px;">🌐</div>
+                <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">AUDIO</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.language)}</div>` : '&nbsp;'}
+              </td>
+              <td width="34%" style="padding:12px 8px;text-align:center;">
+                ${event.subtitle ? `<div style="font-size:18px;margin-bottom:4px;">💬</div>
+                <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SUBTITLES</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.subtitle)}</div>` : '&nbsp;'}
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- PERFORATION DIVIDER -->
+        <tr><td style="padding:0 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="border-top:2px dashed #d4d4d8;"></td>
+              <td style="width:24px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:6px;">&#9679; &#9679; &#9679;</td>
+              <td style="border-top:2px dashed #d4d4d8;"></td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- QR CODE -->
+        <tr><td style="padding:20px 28px;text-align:center;">
+          <div style="display:inline-block;background:#ffffff;border:2px solid #e5e7eb;border-radius:16px;padding:20px;">
+            <img src="${qrSrc}" alt="QR Code for Ticket ${idx + 1}" width="180" height="180" style="display:block;width:180px;height:180px;" />
+          </div>
+          <div style="margin-top:12px;font-size:11px;color:#71717a;letter-spacing:0.3px;">Scan this QR code at the entrance</div>
+        </td></tr>
+
+        <!-- TICKET CODE -->
+        <tr><td style="padding:0 28px 24px 28px;text-align:center;">
+          <div style="display:inline-block;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 20px;">
+            <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:2px;">Ticket Code</div>
+            <div style="font-size:18px;font-weight:800;color:#18181b;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(ticket.uniqueTicketCode)}</div>
+          </div>
+        </td></tr>
+
       </table>
-    </td></tr>` : ''}
+    </td></tr>
     `;
   }));
 
@@ -278,87 +340,12 @@ export async function generateTicketEmailHtml(
         <div style="font-size:14px;color:#52525b;">${customerGreeting}</div>
       </td></tr>
 
-      <!-- TICKET CARD -->
-      <tr><td>
+      <!-- SEPARATE TICKET CARDS -->
+      ${ticketCards.join('')}
+
+      <!-- PRICE BREAKDOWN CARD -->
+      <tr><td style="padding:24px 0 0 0;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-
-          <!-- POSTER -->
-          <tr><td style="padding:0;">
-            ${posterHtml}
-          </td></tr>
-
-          <!-- EVENT INFO -->
-          <tr><td style="padding:24px 28px 0 28px;text-align:center;">
-            <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(event.title)}</div>
-            <div style="font-size:13px;color:#71717a;font-weight:500;letter-spacing:0.3px;">${escapeHtml(event.ticketTypes)}</div>
-          </td></tr>
-
-          <!-- SHOW INFO GRID -->
-          <tr><td style="padding:20px 28px;">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:12px;">
-              <tr>
-                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">
-                  <div style="font-size:20px;margin-bottom:4px;">📅</div>
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">DATE</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${dateStr}</div>
-                </td>
-                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">
-                  <div style="font-size:20px;margin-bottom:4px;">⏱</div>
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">TIME</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${timeStr}</div>
-                </td>
-                <td width="34%" style="padding:14px 8px;text-align:center;border-bottom:1px solid #e5e7eb;">
-                  ${event.screen ? `<div style="font-size:20px;margin-bottom:4px;">🎬</div>
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SCREEN</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.screen)}</div>` : '&nbsp;'}
-                </td>
-              </tr>
-              <tr>
-                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;">
-                  <div style="font-size:20px;margin-bottom:4px;">📍</div>
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">VENUE</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.venue)}</div>
-                </td>
-                <td width="33%" style="padding:14px 8px;text-align:center;border-right:1px solid #e5e7eb;">
-                  ${event.language ? `<div style="font-size:20px;margin-bottom:4px;">🌐</div>
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">AUDIO</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.language)}</div>` : '&nbsp;'}
-                </td>
-                <td width="34%" style="padding:14px 8px;text-align:center;">
-                  ${event.subtitle ? `<div style="font-size:20px;margin-bottom:4px;">💬</div>
-                  <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">SUBTITLES</div>
-                  <div style="font-size:12px;font-weight:700;color:#18181b;line-height:1.4;">${escapeHtml(event.subtitle)}</div>` : '&nbsp;'}
-                </td>
-              </tr>
-            </table>
-          </td></tr>
-
-          <!-- PERFORATION DIVIDER -->
-          <tr><td style="padding:0 20px;">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-              <tr>
-                <td style="border-top:2px dashed #d4d4d8;"></td>
-                <td style="width:24px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:6px;">&#9679; &#9679; &#9679;</td>
-                <td style="border-top:2px dashed #d4d4d8;"></td>
-              </tr>
-            </table>
-          </td></tr>
-
-          <!-- PER-TICKET QR CODES -->
-          ${ticketSections.join('')}
-
-          <!-- PERFORATION DIVIDER -->
-          <tr><td style="padding:20px 20px 0 20px;">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-              <tr>
-                <td style="border-top:2px dashed #d4d4d8;"></td>
-                <td style="width:24px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:6px;">&#9679; &#9679; &#9679;</td>
-                <td style="border-top:2px dashed #d4d4d8;"></td>
-              </tr>
-            </table>
-          </td></tr>
-
-          <!-- PRICE BREAKDOWN -->
           <tr><td style="padding:20px 28px;">
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
               <tr><td style="padding:4px 0;font-size:13px;color:#52525b;">Ticket(s) (${ticketCount} × €${ticketPrice.toFixed(2)})</td><td style="text-align:right;padding:4px 0;font-size:13px;color:#52525b;">€${totalPrice.toFixed(2)}</td></tr>
@@ -368,20 +355,17 @@ export async function generateTicketEmailHtml(
               <tr><td style="padding:4px 0;font-size:14px;font-weight:700;color:#18181b;">Total Amount</td><td style="text-align:right;padding:4px 0;font-size:16px;font-weight:800;color:#6d28d9;">€${totalPrice.toFixed(2)}</td></tr>
             </table>
           </td></tr>
-
-          <!-- PAID BADGE -->
-          <tr><td style="padding:0 28px 24px 28px;text-align:center;">
+          <tr><td style="padding:0 28px 20px 28px;text-align:center;">
             <div style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;padding:6px 16px;">
               <span style="font-size:12px;font-weight:700;color:#16a34a;">&#10003; PAID</span>
             </div>
           </td></tr>
-
         </table>
       </td></tr>
 
       <!-- IMPORTANT INFORMATION -->
       ${event.notes ? `
-      <tr><td style="padding:16px 0 0 0;">
+      <tr><td style="padding:24px 0 0 0;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
           <tr><td style="padding:20px 24px;">
             <div style="font-size:12px;font-weight:700;color:#18181b;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Important Information</div>
@@ -597,41 +581,6 @@ export async function generateTicketPdfHtml(
     }
   } catch {}
 
-  // Generate per-ticket QR sections
-  const ticketSections = await Promise.all(tickets.map(async (ticket, idx) => {
-    const qrDataUrl = await QRCode.toDataURL(ticket.uniqueTicketCode, {
-      width: 160, margin: 1,
-      color: { dark: '#000000', light: '#ffffff' },
-    });
-    const isLast = idx === tickets.length - 1;
-    return `
-    <!-- TICKET ${idx + 1} OF ${ticketCount} -->
-    <tr><td style="padding:8px 24px 6px;text-align:center;">
-      <div style="font-size:10px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Ticket ${idx + 1} of ${ticketCount}</div>
-      <div style="font-size:10px;color:#71717a;">${escapeHtml(event.ticketTypes)}</div>
-    </td></tr>
-    <tr><td style="padding:0 24px;text-align:center;">
-      <div style="display:inline-block;padding:12px;background:#ffffff;border:1.5px solid #e5e7eb;border-radius:14px;">
-        <img src="${qrDataUrl}" alt="QR Code Ticket ${idx + 1}" width="200" height="200" style="display:block;width:200px;height:200px;" />
-      </div>
-      <div style="margin-top:8px;">
-        <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;">Ticket Code</div>
-        <div style="font-size:16px;font-weight:800;color:#18181b;letter-spacing:2px;font-family:'Courier New',monospace;margin-top:2px;">${escapeHtml(ticket.uniqueTicketCode)}</div>
-      </div>
-    </td></tr>
-    ${!isLast ? `
-    <tr><td style="padding:12px 20px;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-        <tr>
-          <td style="border-top:1.5px dashed #d4d4d8;"></td>
-          <td style="width:20px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:4px;">&#9679; &#9679;</td>
-          <td style="border-top:1.5px dashed #d4d4d8;"></td>
-        </tr>
-      </table>
-    </td></tr>` : ''}
-    `;
-  }));
-
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
   if (bannerUrl.startsWith('data:')) {
@@ -649,6 +598,84 @@ export async function generateTicketPdfHtml(
       `<div style="font-size:8px;color:#713f12;line-height:1.5;padding:1px 0;">&#8226; ${escapeHtml(note.trim())}</div>`
     ).join('')}
   </div>` : '';
+
+  // Generate full ticket cards — each ticket is a separate card
+  const ticketCards = await Promise.all(tickets.map(async (ticket, idx) => {
+    const qrDataUrl = await QRCode.toDataURL(ticket.uniqueTicketCode, {
+      width: 160, margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+    });
+
+    return `
+    <!-- TICKET CARD ${idx + 1} OF ${ticketCount} -->
+    <tr><td style="padding:${idx === 0 ? '0' : '16px'} 0 0 0;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border:1.5px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+
+        <!-- TICKET HEADER -->
+        <tr><td style="padding:10px 20px;background:#1e1b4b;text-align:center;">
+          <div style="font-size:9px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:1px;">Ticket ${idx + 1} of ${ticketCount}</div>
+          <div style="font-size:14px;font-weight:800;color:#ffffff;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(ticket.uniqueTicketCode)}</div>
+        </td></tr>
+
+        <!-- POSTER + INFO -->
+        <tr><td style="padding:12px 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td width="80" valign="top" style="padding-right:12px;">${posterHtml}</td>
+              <td valign="top">
+                <div style="font-size:16px;font-weight:800;color:#18181b;line-height:1.25;margin-bottom:4px;">${escapeHtml(event.title)}</div>
+                <div style="font-size:10px;color:#71717a;font-weight:500;">${escapeHtml(event.ticketTypes)}</div>
+                ${event.language ? `<div style="font-size:10px;color:#71717a;margin-top:2px;">${escapeHtml(event.language)}${event.subtitle ? ` · ${escapeHtml(event.subtitle)}` : ''}</div>` : ''}
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- SHOW DETAILS -->
+        <tr><td style="padding:0 20px 12px 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:8px;">
+            <tr>
+              <td width="50%" style="padding:8px 8px 8px 12px;border-right:1px solid #e5e7eb;">
+                <div style="font-size:8px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">Date</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;">${dateStr}</div>
+              </td>
+              <td width="50%" style="padding:8px 12px 8px 8px;">
+                <div style="font-size:8px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">Time</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;">${timeStr}</div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding:6px 12px 8px;border-top:1px solid #e5e7eb;">
+                <div style="font-size:8px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;">Venue</div>
+                <div style="font-size:12px;font-weight:700;color:#18181b;">${escapeHtml(event.venue)}${event.screen ? ` · Screen ${escapeHtml(event.screen)}` : ''}</div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- PERFORATION -->
+        <tr><td style="padding:0 16px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="border-top:1.5px dashed #d4d4d8;"></td>
+              <td style="width:20px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:4px;">&#9679; &#9679;</td>
+              <td style="border-top:1.5px dashed #d4d4d8;"></td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- QR CODE -->
+        <tr><td style="padding:12px 20px;text-align:center;">
+          <div style="display:inline-block;padding:10px;background:#ffffff;border:1.5px solid #e5e7eb;border-radius:12px;">
+            <img src="${qrDataUrl}" alt="QR Code Ticket ${idx + 1}" width="180" height="180" style="display:block;width:180px;height:180px;" />
+          </div>
+          <div style="margin-top:6px;font-size:8px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;">Scan at Entrance</div>
+        </td></tr>
+
+      </table>
+    </td></tr>
+    `;
+  }));
 
   return `
 <!DOCTYPE html>
@@ -671,70 +698,11 @@ export async function generateTicketPdfHtml(
     <div style="font-size:12px;font-weight:600;color:#16a34a;letter-spacing:0.5px;text-transform:uppercase;margin-top:6px;">&#10003; Booking Confirmed</div>
   </td></tr>
 
-  <!-- MOVIE INFO -->
-  <tr><td style="padding:8px 24px;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr>
-        <td width="80" valign="top" style="padding-right:14px;">${posterHtml}</td>
-        <td valign="top">
-          <div style="font-size:18px;font-weight:800;color:#18181b;line-height:1.25;margin-bottom:4px;">${escapeHtml(event.title)}</div>
-          <div style="font-size:11px;color:#71717a;font-weight:500;">${escapeHtml(event.ticketTypes)}</div>
-          ${event.language ? `<div style="font-size:11px;color:#71717a;margin-top:3px;">${escapeHtml(event.language)}${event.subtitle ? ` · ${escapeHtml(event.subtitle)}` : ''}</div>` : ''}
-        </td>
-      </tr>
-    </table>
-  </td></tr>
-
-  <!-- SHOW DETAILS -->
-  <tr><td style="padding:8px 24px;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f9fafb;border-radius:10px;">
-      <tr>
-        <td width="50%" style="padding:10px 10px 10px 14px;border-right:1px solid #e5e7eb;">
-          <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;">Date</div>
-          <div style="font-size:13px;font-weight:700;color:#18181b;">${dateStr}</div>
-        </td>
-        <td width="50%" style="padding:10px 14px 10px 10px;">
-          <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;">Time</div>
-          <div style="font-size:13px;font-weight:700;color:#18181b;">${timeStr}</div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2" style="padding:6px 14px 10px;border-top:1px solid #e5e7eb;">
-          <div style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;">Venue</div>
-          <div style="font-size:13px;font-weight:700;color:#18181b;">${escapeHtml(event.venue)}</div>
-          ${event.screen ? `<div style="font-size:10px;color:#71717a;margin-top:2px;">Screen ${escapeHtml(event.screen)}</div>` : ''}
-        </td>
-      </tr>
-    </table>
-  </td></tr>
-
-  <!-- PERFORATION DIVIDER -->
-  <tr><td style="padding:4px 20px;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr>
-        <td style="border-top:1.5px dashed #d4d4d8;"></td>
-        <td style="width:20px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:4px;">&#9679; &#9679;</td>
-        <td style="border-top:1.5px dashed #d4d4d8;"></td>
-      </tr>
-    </table>
-  </td></tr>
-
-  <!-- PER-TICKET QR CODES -->
-  ${ticketSections.join('')}
-
-  <!-- DIVIDER -->
-  <tr><td style="padding:0 20px;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr>
-        <td style="border-top:1.5px dashed #d4d4d8;"></td>
-        <td style="width:20px;text-align:center;font-size:10px;color:#d4d4d8;vertical-align:top;padding-top:4px;">&#9679; &#9679;</td>
-        <td style="border-top:1.5px dashed #d4d4d8;"></td>
-      </tr>
-    </table>
-  </td></tr>
+  <!-- SEPARATE TICKET CARDS -->
+  ${ticketCards.join('')}
 
   <!-- PRICE -->
-  <tr><td style="padding:10px 24px;">
+  <tr><td style="padding:16px 24px;">
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
       <tr><td style="padding:3px 0;font-size:12px;color:#52525b;">Ticket(s) (${ticketCount} × €${ticketPrice.toFixed(2)})</td><td style="text-align:right;padding:3px 0;font-size:12px;color:#52525b;">€${totalPrice.toFixed(2)}</td></tr>
       <tr><td style="padding:3px 0;font-size:12px;color:#52525b;">Convenience Fee</td><td style="text-align:right;padding:3px 0;font-size:12px;color:#52525b;">€0.00</td></tr>
@@ -788,54 +756,6 @@ export async function generateTicketWhatsAppHtml(
     }
   } catch {}
 
-  // Generate per-ticket QR sections
-  const ticketSections = await Promise.all(tickets.map(async (ticket, idx) => {
-    let qrDataUrl = '';
-    try {
-      const qrBuf = await QRCode.toBuffer(ticket.uniqueTicketCode, { width: 200, margin: 1 });
-      qrDataUrl = 'data:image/png;base64,' + qrBuf.toString('base64');
-    } catch (e) {
-      console.error('QR generation failed:', e);
-    }
-    const isLast = idx === tickets.length - 1;
-    return `
-    <!-- TICKET ${idx + 1} OF ${ticketCount} -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr><td style="padding:${idx === 0 ? '20px' : '0'} 0;text-align:center;">
-        <div style="font-size:12px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Ticket ${idx + 1} of ${ticketCount}</div>
-        <div style="font-size:12px;color:#71717a;margin-bottom:4px;">${escapeHtml(event.ticketTypes)}</div>
-      </td></tr>
-      <tr><td style="padding:0 0;text-align:center;">
-        <div style="display:inline-block;padding:12px;border:2px solid #6d28d9;border-radius:16px;background:#ffffff;">
-          <img src="${qrDataUrl}" alt="QR Code Ticket ${idx + 1}" width="180" height="180" style="display:block;width:180px;height:180px;" />
-        </div>
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:12px;">
-          <tr>
-            <td style="border-top:1px solid #d4d4d8;"></td>
-            <td style="padding:0 12px;font-size:11px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:1.5px;white-space:nowrap;">Scan at Entrance</td>
-            <td style="border-top:1px solid #d4d4d8;"></td>
-          </tr>
-        </table>
-      </td></tr>
-    </table>
-
-    <!-- TICKET CODE -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr><td style="padding:12px 0;text-align:center;">
-        <div style="display:inline-block;border:1.5px solid #d4d4d8;border-radius:8px;padding:8px 20px;">
-          <span style="font-size:14px;font-weight:800;color:#18181b;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(ticket.uniqueTicketCode)}</span>
-        </div>
-      </td></tr>
-    </table>
-
-    ${!isLast ? `
-    <!-- DIVIDER BETWEEN TICKETS -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr><td style="padding:8px 0;"><div style="border-top:2px dashed #d4d4d8;"></div></td></tr>
-    </table>` : ''}
-    `;
-  }));
-
   let posterHtml = '';
   const bannerUrl = event.bannerUrl || '';
   if (bannerUrl.startsWith('data:')) {
@@ -845,6 +765,76 @@ export async function generateTicketWhatsAppHtml(
   } else {
     posterHtml = `<div style="width:110px;height:140px;background:linear-gradient(135deg,#1e1b4b,#6d28d9);border-radius:8px;"></div>`;
   }
+
+  // Generate full ticket cards — each ticket is a separate card
+  const ticketCards = await Promise.all(tickets.map(async (ticket, idx) => {
+    let qrDataUrl = '';
+    try {
+      const qrBuf = await QRCode.toBuffer(ticket.uniqueTicketCode, { width: 200, margin: 1 });
+      qrDataUrl = 'data:image/png;base64,' + qrBuf.toString('base64');
+    } catch (e) {
+      console.error('QR generation failed:', e);
+    }
+
+    return `
+    <!-- TICKET CARD ${idx + 1} OF ${ticketCount} -->
+    <tr><td style="padding:${idx === 0 ? '0' : '20px'} 0 0 0;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+        <!-- TICKET HEADER -->
+        <tr><td style="padding:12px 20px;background:#1e1b4b;text-align:center;">
+          <div style="font-size:10px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px;">Ticket ${idx + 1} of ${ticketCount}</div>
+          <div style="font-size:15px;font-weight:800;color:#ffffff;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(ticket.uniqueTicketCode)}</div>
+        </td></tr>
+
+        <!-- POSTER + INFO -->
+        <tr><td style="padding:16px 20px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td width="100" valign="top" style="padding-right:14px;">${posterHtml}</td>
+              <td valign="top">
+                <div style="font-size:15px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:8px;">${escapeHtml(event.title)}</div>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr><td style="padding:2px 0;font-size:12px;color:#52525b;vertical-align:top;width:20px;">&#128197;</td><td style="padding:2px 0;font-size:12px;color:#52525b;">${dateStr}</td></tr>
+                  <tr><td style="padding:2px 0;font-size:12px;color:#52525b;vertical-align:top;width:20px;">&#128336;</td><td style="padding:2px 0;font-size:12px;color:#52525b;">${timeStr}</td></tr>
+                  <tr><td style="padding:2px 0;font-size:12px;color:#52525b;vertical-align:top;width:20px;">&#128205;</td><td style="padding:2px 0;font-size:12px;color:#52525b;">${escapeHtml(event.venue)}</td></tr>
+                  ${event.screen ? `<tr><td style="padding:2px 0;font-size:12px;color:#52525b;vertical-align:top;width:20px;">&#128246;</td><td style="padding:2px 0;font-size:12px;color:#52525b;">Screen ${escapeHtml(event.screen)}</td></tr>` : ''}
+                  ${event.language ? `<tr><td style="padding:2px 0;font-size:12px;color:#52525b;vertical-align:top;width:20px;">&#127916;</td><td style="padding:2px 0;font-size:12px;color:#52525b;">Audio: ${escapeHtml(event.language)}</td></tr>` : ''}
+                  <tr><td style="padding:2px 0;font-size:12px;color:#52525b;vertical-align:top;width:20px;">&#127916;</td><td style="padding:2px 0;font-size:12px;color:#52525b;">${escapeHtml(event.ticketTypes)}</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- DIVIDER -->
+        <tr><td style="padding:0 16px;"><div style="border-top:2px dashed #d4d4d8;"></div></td></tr>
+
+        <!-- QR CODE -->
+        <tr><td style="padding:16px 20px;text-align:center;">
+          <div style="display:inline-block;padding:10px;border:2px solid #6d28d9;border-radius:14px;background:#ffffff;">
+            <img src="${qrDataUrl}" alt="QR Code Ticket ${idx + 1}" width="160" height="160" style="display:block;width:160px;height:160px;" />
+          </div>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:10px;">
+            <tr>
+              <td style="border-top:1px solid #d4d4d8;"></td>
+              <td style="padding:0 10px;font-size:10px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:1.5px;white-space:nowrap;">Scan at Entrance</td>
+              <td style="border-top:1px solid #d4d4d8;"></td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- TICKET CODE -->
+        <tr><td style="padding:0 20px 16px 20px;text-align:center;">
+          <div style="display:inline-block;border:1.5px solid #d4d4d8;border-radius:8px;padding:6px 16px;">
+            <span style="font-size:13px;font-weight:800;color:#18181b;letter-spacing:2px;font-family:'Courier New',monospace;">${escapeHtml(ticket.uniqueTicketCode)}</span>
+          </div>
+        </td></tr>
+
+      </table>
+    </td></tr>
+    `;
+  }));
 
   return `
 <!DOCTYPE html>
@@ -866,7 +856,7 @@ export async function generateTicketWhatsAppHtml(
   </td></tr>
 
   <!-- WHITE CARD -->
-  <tr><td style="background:#ffffff;padding:0 24px;">
+  <tr><td style="background:#ffffff;padding:0 20px;">
 
     <!-- BOOKING CONFIRMED -->
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -884,61 +874,30 @@ export async function generateTicketWhatsAppHtml(
       </td></tr>
     </table>
 
-    <!-- MOVIE INFO -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr>
-        <td width="110" valign="top" style="padding:18px 16px 18px 0;">${posterHtml}</td>
-        <td valign="top" style="padding:18px 0;">
-          <div style="font-size:17px;font-weight:800;color:#18181b;line-height:1.3;margin-bottom:10px;">${escapeHtml(event.title)}</div>
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128197;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${dateStr}</td></tr>
-            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128336;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${timeStr}</td></tr>
-            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128205;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${escapeHtml(event.venue)}</td></tr>
-            ${event.screen ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128246;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Screen ${escapeHtml(event.screen)}</td></tr>` : ''}
-            ${event.language ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Audio: ${escapeHtml(event.language)}</td></tr>` : ''}
-            ${event.subtitle ? `<tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#128172;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">Subtitles: ${escapeHtml(event.subtitle)}</td></tr>` : ''}
-            <tr><td style="padding:3px 0;font-size:13px;color:#52525b;vertical-align:top;width:22px;">&#127916;</td><td style="padding:3px 0;font-size:13px;color:#52525b;">${escapeHtml(event.ticketTypes)}</td></tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-
-    <!-- DIVIDER -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr><td style="border-top:2px dashed #d4d4d8;"></td></tr>
-    </table>
-
-    <!-- PER-TICKET QR CODES -->
-    ${ticketSections.join('')}
-
-    <!-- DIVIDER -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr><td style="border-top:2px dashed #d4d4d8;"></td></tr>
-    </table>
+    <!-- SEPARATE TICKET CARDS -->
+    ${ticketCards.join('')}
 
     <!-- PRICE SECTION -->
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-      <tr><td style="padding:16px 0 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f3ff;border-radius:12px;padding:14px 20px;">
-          <tr>
-            <td style="padding:0 0 10px;font-size:14px;font-weight:700;color:#18181b;">${ticketCount} ${ticketCount === 1 ? 'Ticket' : 'Tickets'}</td>
-            <td style="text-align:right;padding:0 0 10px;font-size:14px;font-weight:700;color:#18181b;">€${totalPrice.toFixed(2)}</td>
-          </tr>
-          <tr><td colspan="2" style="padding:0 0 10px;"><div style="border-top:1px solid #d4d4d8;"></div></td></tr>
-          <tr>
-            <td>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                <tr>
-                  <td style="width:18px;height:18px;background:#16a34a;border-radius:50%;text-align:center;font-size:11px;color:#fff;font-weight:bold;line-height:18px;">&#10003;</td>
-                  <td style="padding-left:6px;font-size:13px;font-weight:700;color:#16a34a;">PAID</td>
-                </tr>
-              </table>
-            </td>
-            <td></td>
-          </tr>
-        </table>
-      </td></tr>
-    </table>
+    <tr><td style="padding:20px 0;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f5f3ff;border-radius:12px;padding:14px 20px;">
+        <tr>
+          <td style="padding:0 0 10px;font-size:14px;font-weight:700;color:#18181b;">${ticketCount} ${ticketCount === 1 ? 'Ticket' : 'Tickets'}</td>
+          <td style="text-align:right;padding:0 0 10px;font-size:14px;font-weight:700;color:#18181b;">€${totalPrice.toFixed(2)}</td>
+        </tr>
+        <tr><td colspan="2" style="padding:0 0 10px;"><div style="border-top:1px solid #d4d4d8;"></div></td></tr>
+        <tr>
+          <td>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td style="width:18px;height:18px;background:#16a34a;border-radius:50%;text-align:center;font-size:11px;color:#fff;font-weight:bold;line-height:18px;">&#10003;</td>
+                <td style="padding-left:6px;font-size:13px;font-weight:700;color:#16a34a;">PAID</td>
+              </tr>
+            </table>
+          </td>
+          <td></td>
+        </tr>
+      </table>
+    </td></tr>
 
   </td></tr>
 
