@@ -213,7 +213,7 @@ export async function registerRoutes(
 
   app.post(api.admin.organizerApplications.approve.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
-      const result = await storage.approveOrganizerApplication(req.params.id);
+      const result = await storage.approveOrganizerApplication(String(req.params.id));
       if (!result) return res.status(404).json({ message: "Application not found" });
       await sendActivationEmail(result.app.email, result.app.name || result.app.company);
       res.status(200).json(result.organizer);
@@ -225,7 +225,7 @@ export async function registerRoutes(
   app.post(api.admin.organizerApplications.reject.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const input = api.admin.organizerApplications.reject.input.parse(req.body);
-      const updated = await storage.rejectOrganizerApplication(req.params.id, input.reason);
+      const updated = await storage.rejectOrganizerApplication(String(req.params.id), input.reason);
       if (!updated) return res.status(404).json({ message: "Application not found" });
       res.status(200).json(updated);
     } catch (err) {
@@ -266,10 +266,10 @@ export async function registerRoutes(
   app.post(api.admin.organizers.resetPassword.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const input = api.admin.organizers.resetPassword.input.parse(req.body);
-      const organizer = await storage.getOrganizerByUserId(req.params.id);
+      const organizer = await storage.getOrganizerByUserId(String(req.params.id));
       // Note: reset is by organizer id; fetch organizer, then its user
       // If organizer not found, try interpret param as organizer id and load user via organizer record
-      const orgId = req.params.id;
+      const orgId = String(req.params.id);
       const orgRecord = await db.select().from(organizers).where(eq(organizers.id, orgId));
       if (!orgRecord || orgRecord.length === 0) {
         return res.status(404).json({ message: "Organizer not found" });
@@ -293,7 +293,7 @@ export async function registerRoutes(
   app.patch(api.admin.organizers.updateStatus.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
     try {
       const input = api.admin.organizers.updateStatus.input.parse(req.body);
-      const updated = await storage.updateOrganizerStatus(req.params.id, input.status);
+      const updated = await storage.updateOrganizerStatus(String(req.params.id), input.status);
       if (!updated) {
         return res.status(404).json({ message: "Organizer not found" });
       }
@@ -304,7 +304,7 @@ export async function registerRoutes(
   });
 
   app.delete(api.admin.organizers.delete.path, authenticateToken, requireAdmin, adminLimiter, async (req, res) => {
-    await storage.deleteOrganizer(req.params.id);
+    await storage.deleteOrganizer(String(req.params.id));
     res.status(204).send();
   });
 
@@ -522,7 +522,7 @@ export async function registerRoutes(
   });
 
   {
-    const ATT_SYNC_PATH = api?.organizer?.events?.attendeesSync?.path ?? "/api/organizer/events/:id/attendees/sync";
+    const ATT_SYNC_PATH = "/api/organizer/events/:id/attendees/sync";
     app.post(ATT_SYNC_PATH, authenticateToken, requireOrganizer, async (req: any, res) => {
       try {
         const eventId = req.params.id;
@@ -545,7 +545,7 @@ export async function registerRoutes(
   }
 
   {
-    const CAP_RECON_PATH = api?.organizer?.events?.capacityReconcile?.path ?? "/api/organizer/events/:id/capacity/reconcile";
+    const CAP_RECON_PATH = "/api/organizer/events/:id/capacity/reconcile";
     app.post(CAP_RECON_PATH, authenticateToken, requireOrganizer, async (req: any, res) => {
       try {
         const eventId = req.params.id;
