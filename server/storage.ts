@@ -1,5 +1,6 @@
 import { db } from "./db.js";
 import { generateSlug, makeUniqueSlug } from "../shared/slug.js";
+import { encryptObject, decryptToObject } from "./crypto.js";
 import { 
   users,
   User,
@@ -241,7 +242,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async saveOrganizerBankDetails(organizerId: string, details: any): Promise<void> {
-    const cipher = JSON.stringify(details);
+    const cipher = encryptObject(details);
     const existing = await db.select().from(organizerBankDetails).where(eq(organizerBankDetails.organizerId, organizerId));
     if (existing.length > 0) {
       await db.update(organizerBankDetails).set({ ciphertext: cipher, updatedAt: new Date() }).where(eq(organizerBankDetails.organizerId, organizerId));
@@ -254,7 +255,7 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db.select().from(organizerBankDetails).where(eq(organizerBankDetails.organizerId, organizerId));
     if (!row) return undefined;
     try {
-      return JSON.parse(row.ciphertext);
+      return decryptToObject(row.ciphertext);
     } catch {
       return undefined;
     }
@@ -268,7 +269,7 @@ export class DatabaseStorage implements IStorage {
     const [row] = await db.select().from(organizerBankDetails).where(eq(organizerBankDetails.organizerId, event.organizerId));
     if (!row) return undefined;
     try {
-      return JSON.parse(row.ciphertext);
+      return decryptToObject(row.ciphertext);
     } catch {
       return undefined;
     }

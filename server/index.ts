@@ -77,12 +77,11 @@ export async function initialize() {
     // Global Error Handler
     app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
       console.error("Internal Server Error:", err);
       if (res.headersSent) {
         return next(err);
       }
-      return res.status(status).json({ message });
+      return res.status(status).json({ message: "Internal server error" });
     });
 
     // Setup static files or Vite (only for local dev/Render)

@@ -62,6 +62,14 @@ const scanLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const publicReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: "Too many requests, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -503,11 +511,7 @@ export async function registerRoutes(
       const tickets = await storage.getTicketsByEvent(event.id);
       return res.status(200).json(tickets);
     } catch (err) {
-      if (err instanceof Error) {
-        console.error("Error in organizer events tickets route:", err.message, err.stack);
-        return res.status(500).json({ message: err.message });
-      }
-      console.error("Unknown error in organizer events tickets route:", err);
+      console.error("Error in organizer events tickets route:", err);
       return res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -575,13 +579,18 @@ export async function registerRoutes(
         "ticket_quantity","status","transaction_reference","created_at"
       ].join(",");
       const lines = filtered.map(({ booking, event }) => {
+        const sanitizeCsv = (v: string) => {
+          const escaped = v.replace(/"/g, '""');
+          if (/^[=+\-@\t\r]/.test(escaped)) return `'${escaped}`;
+          return escaped;
+        };
         const vals = [
           booking.id,
           event.id,
-          (event.title || "").replace(/"/g,'""'),
-          (booking.customerName || "").replace(/"/g,'""'),
-          (booking.customerEmail || "").replace(/"/g,'""'),
-          (booking.customerPhone || "").replace(/"/g,'""'),
+          sanitizeCsv(event.title || ""),
+          sanitizeCsv(booking.customerName || ""),
+          sanitizeCsv(booking.customerEmail || ""),
+          sanitizeCsv(booking.customerPhone || ""),
           String(booking.ticketQuantity ?? ""),
           booking.status ?? "",
           booking.transactionReference ?? "",
@@ -729,8 +738,6 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     } catch (err) {
       if (err instanceof z.ZodError) {
         res.status(400).json({ message: err.errors[0].message });
-      } else if (err instanceof Error) {
-        res.status(400).json({ message: err.message });
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
@@ -773,9 +780,8 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       return res.status(200).json({ message: "Tickets resent successfully" });
     } catch (err) {
       console.error('Resend Error:', err);
-      const errorMessage = err instanceof Error ? err.message : "Internal server error";
       if (!res.headersSent) {
-        res.status(500).json({ message: errorMessage });
+        res.status(500).json({ message: "Internal server error" });
       }
     }
   });
@@ -955,7 +961,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       }
     }
   });
-  app.get("/api/public/events-list", async (req, res) => {
+  app.get("/api/public/events-list", publicReadLimiter, async (req, res) => {
     try {
       const events = await storage.listActivePublicEvents();
       res.setHeader("Cache-Control", "no-store");
@@ -965,7 +971,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
       res.status(500).json({ message: "Internal server error" });
     }
   });
-  app.get(api.public.events.get.path, async (req, res) => {
+  app.get(api.public.events.get.path, publicReadLimiter, async (req, res) => {
     const identifier = req.params.identifier;
     let event;
     // Check if identifier is a UUID (contains hyphens in UUID format)
@@ -1179,7 +1185,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
   });
   const PUBLIC_TICKETS_GET_PATH = api?.public?.tickets?.get?.path ?? "/api/public/tickets/:id";
 
-  app.get(PUBLIC_BANK_BY_EVENT_PATH, async (req, res) => {
+  app.get(PUBLIC_BANK_BY_EVENT_PATH, publicReadLimiter, async (req, res) => {
     const data = await storage.getOrganizerBankDetailsByEvent(req.params.id);
     if (!data) return res.status(404).json({ message: "Bank details not found" });
     res.status(200).json(data);
@@ -1284,7 +1290,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.get("/api/public/bookings/:id/ticket-html", async (req, res) => {
+  app.get("/api/public/bookings/:id/ticket-html", publicReadLimiter, async (req, res) => {
     try {
       const booking = await storage.getBooking(req.params.id);
       if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -1306,7 +1312,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.get("/api/public/bookings/:id/ticket-pdf-html", async (req, res) => {
+  app.get("/api/public/bookings/:id/ticket-pdf-html", publicReadLimiter, async (req, res) => {
     try {
       const booking = await storage.getBooking(req.params.id);
       if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -1331,7 +1337,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.get("/api/public/qr/:code", async (req, res) => {
+  app.get("/api/public/qr/:code", publicReadLimiter, async (req, res) => {
     try {
       const code = req.params.code;
       const buf = await QRCode.toBuffer(code, { width: 200, margin: 1 });
@@ -1344,7 +1350,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
     }
   });
 
-  app.get("/api/public/bookings/:id/whatsapp-ticket-html", async (req, res) => {
+  app.get("/api/public/bookings/:id/whatsapp-ticket-html", publicReadLimiter, async (req, res) => {
     try {
       const booking = await storage.getBooking(req.params.id);
       if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -1370,7 +1376,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
   });
 
   // Short ticket link — server endpoint (called by React route)
-  app.get("/api/public/ticket-link/:ticketCode", async (req, res) => {
+  app.get("/api/public/ticket-link/:ticketCode", publicReadLimiter, async (req, res) => {
     try {
       const { ticket, event } = await storage.getTicketByCodeWithEvent(req.params.ticketCode) || {};
       if (!ticket || !event) return res.status(404).send("Ticket not found");
@@ -1394,7 +1400,7 @@ await sendTicketsEmail(booking.customerEmail, booking.customerName, event, ticke
   });
 
   // Get first ticket code for a booking (used for WhatsApp link)
-  app.get("/api/public/bookings/:id/first-ticket", async (req, res) => {
+  app.get("/api/public/bookings/:id/first-ticket", publicReadLimiter, async (req, res) => {
     try {
       const tickets = await storage.getTicketsByBooking(req.params.id);
       if (tickets.length === 0) return res.status(404).json({ message: "No tickets found" });

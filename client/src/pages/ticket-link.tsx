@@ -1,5 +1,5 @@
 import { useRoute } from "wouter";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function TicketLink() {
@@ -7,7 +7,6 @@ export default function TicketLink() {
   const ticketCode = params?.ticketCode || "";
   const [html, setHtml] = useState("");
   const [error, setError] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (!ticketCode) return;
@@ -19,17 +18,6 @@ export default function TicketLink() {
       .then(setHtml)
       .catch(() => setError(true));
   }, [ticketCode]);
-
-  useEffect(() => {
-    if (html && iframeRef.current) {
-      const doc = iframeRef.current.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(html);
-        doc.close();
-      }
-    }
-  }, [html]);
 
   if (error) {
     return (
@@ -53,8 +41,8 @@ export default function TicketLink() {
   return (
     <div style={{ background: "#f0f0f3", minHeight: "100vh", display: "flex", justifyContent: "center" }}>
       <iframe
-        ref={iframeRef}
-        sandbox="allow-same-origin"
+        sandbox=""
+        srcDoc={html}
         style={{ border: "none", width: "380px", minHeight: "100vh" }}
         title="Ticket"
       />
