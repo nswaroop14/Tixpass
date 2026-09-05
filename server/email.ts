@@ -163,7 +163,7 @@ export async function generateTicketEmailHtml(
   tickets: Ticket[],
   customerName?: string,
   organizerName?: string,
-  options?: { useDataUrls?: boolean }
+  options?: { useDataUrls?: boolean; qrCidRefs?: string[] }
 ): Promise<string> {
   const brandName = "TixPass";
   const ticketCount = tickets.length;
@@ -173,6 +173,7 @@ export async function generateTicketEmailHtml(
   const customerGreeting = customerName ? `Hi ${escapeHtml(customerName)},` : "Hi there,";
 
   const useDataUrls = options?.useDataUrls ?? false;
+  const qrCidRefs = options?.qrCidRefs ?? [];
 
   let headerLogoDataUrl = '';
   let footerLogoDataUrl = '';
@@ -213,15 +214,17 @@ export async function generateTicketEmailHtml(
 
   // Generate full ticket cards — each ticket is a separate card
   const ticketCards = await Promise.all(tickets.map(async (ticket, idx) => {
-    // QR codes ALWAYS as data URLs (base64) so they load in all email clients
-    let qrSrc = '';
-    try {
-      qrSrc = await QRCode.toDataURL(ticket.uniqueTicketCode, {
-        width: 200, margin: 1,
-        color: { dark: '#000000', light: '#ffffff' },
-      });
-    } catch {
-      qrSrc = `${APP_URL}/api/public/qr/${encodeURIComponent(ticket.uniqueTicketCode)}`;
+    // Use CID ref if provided, otherwise fall back to data URL
+    let qrSrc = qrCidRefs[idx] || '';
+    if (!qrSrc) {
+      try {
+        qrSrc = await QRCode.toDataURL(ticket.uniqueTicketCode, {
+          width: 200, margin: 1,
+          color: { dark: '#000000', light: '#ffffff' },
+        });
+      } catch {
+        qrSrc = `${APP_URL}/api/public/qr/${encodeURIComponent(ticket.uniqueTicketCode)}`;
+      }
     }
 
     return `
@@ -472,8 +475,29 @@ export async function sendTicketsEmail(
     }
   }
 
-  // Generate the HTML — use CID for logos/poster (small), but QR codes always as data URLs
-  const html = await generateTicketEmailHtml(event, tickets, customerName, 'TixPass', { useDataUrls: false });
+  // Generate QR code CID attachments (one per ticket)
+  const qrCidRefs: string[] = [];
+  for (let i = 0; i < tickets.length; i++) {
+    const contentId = `qr-ticket-${i}`;
+    qrCidRefs.push(`cid:${contentId}`);
+    try {
+      const qrBuf = await QRCode.toBuffer(tickets[i].uniqueTicketCode, {
+        width: 200, margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+      });
+      attachments.push({
+        filename: `qr-ticket-${i}.png`,
+        content: qrBuf,
+        contentType: 'image/png',
+        contentId,
+      });
+    } catch (err) {
+      console.error(`QR generation failed for ticket ${i}:`, err);
+    }
+  }
+
+  // Generate the HTML — CID for logos/poster/QR, no base64 bloat
+  const html = await generateTicketEmailHtml(event, tickets, customerName, 'TixPass', { useDataUrls: false, qrCidRefs });
 
   try {
     const result = await resend.emails.send({
