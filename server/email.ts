@@ -475,7 +475,7 @@ export async function sendTicketsEmail(
   }
 
   // Generate the HTML using the canonical template with cid: references
-  const html = await generateTicketEmailHtml(event, tickets, customerName, 'TixPass', { useDataUrls: false });
+  const html = await generateTicketEmailHtml(event, tickets, customerName, 'TixPass', { useDataUrls: true });
 
   try {
     const result = await resend.emails.send({
