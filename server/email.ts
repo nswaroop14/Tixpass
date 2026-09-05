@@ -213,16 +213,14 @@ export async function generateTicketEmailHtml(
 
   // Generate full ticket cards — each ticket is a separate card
   const ticketCards = await Promise.all(tickets.map(async (ticket, idx) => {
+    // QR codes ALWAYS as data URLs (base64) so they load in all email clients
     let qrSrc = '';
-    if (useDataUrls) {
-      try {
-        qrSrc = await QRCode.toDataURL(ticket.uniqueTicketCode, {
-          width: 200, margin: 1,
-          color: { dark: '#000000', light: '#ffffff' },
-        });
-      } catch {}
-    }
-    if (!qrSrc) {
+    try {
+      qrSrc = await QRCode.toDataURL(ticket.uniqueTicketCode, {
+        width: 200, margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+      });
+    } catch {
       qrSrc = `${APP_URL}/api/public/qr/${encodeURIComponent(ticket.uniqueTicketCode)}`;
     }
 
@@ -474,8 +472,8 @@ export async function sendTicketsEmail(
     }
   }
 
-  // Generate the HTML using the canonical template with cid: references
-  const html = await generateTicketEmailHtml(event, tickets, customerName, 'TixPass', { useDataUrls: true });
+  // Generate the HTML — use CID for logos/poster (small), but QR codes always as data URLs
+  const html = await generateTicketEmailHtml(event, tickets, customerName, 'TixPass', { useDataUrls: false });
 
   try {
     const result = await resend.emails.send({
